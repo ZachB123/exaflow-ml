@@ -1,6 +1,6 @@
 # VIP ExaFlow – Burgers + Libtorch Setup
 
-## ✅ Completed (as of [today’s date])
+## ✅ Completed (as of Sep/16/2025)
 - **Libtorch (C++ API) installed and tested**
   - Verified on **Mac** and **ICE cluster** with `torch_cpp_test` (random tensor + matmul).
   - Environment variables (`LIBTORCH`, `CMAKE_PREFIX_PATH`, `LD_LIBRARY_PATH`) set and working.
