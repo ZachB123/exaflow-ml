@@ -24,26 +24,25 @@
   - Ready for TorchScript model loading when a trained model is available.
 
 ## 📂 Project Structure
-
-vip/
-├─ libtorch_test/   # initial torch demo + libtorch install
-│   ├─ test.cpp
-│   ├─ CMakeLists.txt
-│   └─ run_torch.slurm
-├─ burgers/         # baseline + NN-coupled solvers
-│   ├─ burgers.hpp / burgers.cpp   # solver core
-│   ├─ main.cpp     # baseline Burgers
-│   ├─ main_nn.cpp  # NN-coupled Burgers
-│   ├─ mlp.hpp      # tiny MLP definition
-│   ├─ nn_weights.hpp # weight predictor stub
-│   ├─ CMakeLists.txt
-│   ├─ run_burgers.slurm
-│   └─ run_burgers_nn.slurm
-└─ nn_demo/         # standalone NN training demo
-├─ mlp.hpp
-├─ mlp_demo.cpp
-├─ CMakeLists.txt
-└─ run_mlp.slurm
+   vip/
+   ├─ libtorch_test/   # initial torch demo + libtorch install
+   │   ├─ test.cpp
+   │   ├─ CMakeLists.txt
+   │   └─ run_torch.slurm
+   ├─ burgers/         # baseline + NN-coupled solvers
+   │   ├─ burgers.hpp / burgers.cpp   # solver core
+   │   ├─ main.cpp     # baseline Burgers
+   │   ├─ main_nn.cpp  # NN-coupled Burgers
+   │   ├─ mlp.hpp      # tiny MLP definition
+   │   ├─ nn_weights.hpp # weight predictor stub
+   │   ├─ CMakeLists.txt
+   │   ├─ run_burgers.slurm
+   │   └─ run_burgers_nn.slurm
+   └─ nn_demo/         # standalone NN training demo
+   ├─ mlp.hpp
+   ├─ mlp_demo.cpp
+   ├─ CMakeLists.txt
+   └─ run_mlp.slurm
 
 ## 🔜 Next Steps
 1. **Diagnostics**
