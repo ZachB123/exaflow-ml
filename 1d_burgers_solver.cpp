@@ -6,7 +6,9 @@
 // Defining constants
 
 // Number of spatial points that the domain is discretized into
+// This number could change based on the number of times we want to calculate the velocity
 const int nx = 101;
+
 // Number of time steps to simulate the evolution of the system
 const int nt = 2000;
 // Spatial step size, calculated based on the domain length (2.0) and number of points
@@ -35,7 +37,7 @@ int main()
     }
 
     // Time-stepping loop
-    // Updates the velocity field using the finite difference method
+    // Updates the velocity for each time step using the burger's equation
     for (int n = 0; n < nt; ++n)
     {
         un = u;
@@ -46,7 +48,8 @@ int main()
     }
 
     // Writing results to a simple data file
-    // The output file contains the spatial position and corresponding velocity
+    // The output file contains the spatial position (x) and corresponding velocity u(x, t)
+    // For instance, if the output file has a row that reads "1.0 1.7", that means that the position is 1.0 and the velocity is 1.7
     std::ofstream fout("burgers_output.dat");
     for (int i = 0; i < nx; ++i)
     {
@@ -55,7 +58,7 @@ int main()
     }
     fout.close();
 
-    // Indicates completion
+    // Prints that the process has been completed
     std::cout << "Simulation complete. Output written to burgers_output.dat\n";
     return 0;
 }
