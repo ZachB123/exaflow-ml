@@ -21,5 +21,8 @@ plt.xlabel('Position (x)')
 plt.ylabel('Velocity (u)')
 plt.legend()
 
-# Show the plot
+# Save the plot to a file in the same directory
+plt.savefig('comparison_plot.png', dpi=300)
+
+# Optionally, show the plot
 plt.show()
