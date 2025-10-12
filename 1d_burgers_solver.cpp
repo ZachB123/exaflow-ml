@@ -50,7 +50,7 @@ int main()
     // Writing results to a simple data file
     // The output file contains the spatial position (x) and corresponding velocity u(x, t)
     // For instance, if the output file has a row that reads "1.0 1.7", that means that the position is 1.0 and the velocity is 1.7
-    std::ofstream fout("burgers_output.dat");
+    std::ofstream fout("burgers_output_cpp.dat");
     for (int i = 0; i < nx; ++i)
     {
         double x = i * dx;
