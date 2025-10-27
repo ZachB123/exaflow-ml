@@ -76,8 +76,7 @@ std::vector<std::vector<double>> BurgersSolver1d::getSolution() const {
     return solution_history;
 }
 
-
-void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::string& run_name) const {
+void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::string& run_name, int gap) const {
 
     if (!std::filesystem::exists(base_folder)) {
         std::filesystem::create_directory(base_folder);
@@ -95,9 +94,14 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
 
     // Write one file per time step
     for (size_t t = 0; t < solution_history.size(); ++t) {
+
+        if (t % gap != 0) {
+            continue;
+        }
+
         std::ostringstream filename;
         filename << run_folder << "/timestep_"
-                 << std::setw(5) << std::setfill('0') << t << ".txt";
+                 << std::setw(5) << std::setfill('0') << t << ".csv";
 
         std::ofstream file(filename.str());
         if (!file.is_open()) {
@@ -105,10 +109,12 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
             continue;
         }
 
+        file << "x,u\n";
+
         const auto& u_t = solution_history[t];
         for (int i = 0; i < num_domain_points; ++i) {
             double x = i * spatial_step_size;  // compute x-coordinate
-            file << i << "," << x << "," << u_t[i] << "\n";
+            file << x << "," << u_t[i] << "\n";
         }
     }
 

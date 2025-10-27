@@ -7,10 +7,10 @@
 #include "burgers.h"
 
 int main() {
-    SolverConfig config = {
+    SolverConfig step_function_config = {
         .kinematic_viscosity = 0.01,
-        .num_domain_points = 101,
-        .time_steps = 200,
+        .num_domain_points = 201,
+        .time_steps = 2000,
         .domain_length = 2.0,
         .time_step_size = 0.001
     };
@@ -25,10 +25,30 @@ int main() {
         }
     };
 
-    BurgersSolver1d solver(config, step_function);
+    BurgersSolver1d step_function_solver(step_function_config, step_function);
+
+    step_function_solver.solve();
+
+    step_function_solver.saveSolution("../data", "step_function", 10);
+
+
+    SolverConfig sine_wave_config = {
+        .kinematic_viscosity = 0.01,
+        .num_domain_points = 201,
+        // last point before nans
+        .time_steps = 1160,
+        .domain_length = 2.0 * M_PI,
+        .time_step_size = 0.001
+    };
+
+    // initial condition: one full sine wave over [0, 2π]
+    std::function<double(double)> sine_function = [](double x) -> double {
+        return std::sin(x);
+    };
+
+    BurgersSolver1d solver(sine_wave_config, sine_function);
 
     solver.solve();
-
-    solver.saveSolution("../data", "step_function");
+    solver.saveSolution("../data", "sine_wave", 10);
 }
 

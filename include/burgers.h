@@ -47,5 +47,5 @@ public:
 
     std::vector<std::vector<double>> getSolution() const;
 
-    void saveSolution(const std::string& base_folder, const std::string& run_name) const;
+    void saveSolution(const std::string& base_folder, const std::string& run_name, int gap) const;
 };
