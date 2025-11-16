@@ -29,7 +29,7 @@ int main() {
 
     step_function_solver.solve();
 
-    step_function_solver.saveSolution("../data", "step_function", 10);
+    step_function_solver.saveSolution("../data", "step_function", 1);
 
 
     SolverConfig sine_wave_config = {
@@ -49,6 +49,6 @@ int main() {
     BurgersSolver1d solver(sine_wave_config, sine_function);
 
     solver.solve();
-    solver.saveSolution("../data", "sine_wave", 10);
+    solver.saveSolution("../data", "sine_wave", 1);
 }
 

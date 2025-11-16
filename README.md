@@ -19,8 +19,12 @@ This makes it useful for understanding shock waves, traffic flow, and basic flui
 ├── src/
 │   ├── main.cpp           # Example simulations
 │   └── burgers.cpp        # Solver implementation
+├── visualizer/
+│   └── visualize.py       # Display the burgers equations you have ran
 ├── CMakeLists.txt         # Build configuration
+├── requirements.txt       # Python Libraries
 └── data/                  # Output directory (created at runtime)
+
 ```
 
 ## Building the Project
@@ -187,6 +191,19 @@ The included `main.cpp` demonstrates two classic test cases:
 ### 2. Sine Wave
 - Initial condition: sin(x) over [0, 2π]
 - Demonstrates wave steepening and breaking
+
+## Visualizer
+
+The visualizer is written in Python using MatPlotLib. To run it we must first create a virtual environment, install the requirements and then execute visualize.py
+
+```
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+// speed is an optional parameter and will default to one
+python visualize.py <folder name in data/> --speed 1
+```
+
 
 ## Notes
 
