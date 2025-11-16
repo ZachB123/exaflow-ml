@@ -55,7 +55,20 @@ int main() {
     
     RandomInitialCondition f(5, 10, true, true);
     std::cout << f.toString() << std::endl;
-    std::cout << f.operator()(2) << std::endl;
+
+    SolverConfig random_function_config = {
+        .kinematic_viscosity = 0.01,
+        .num_domain_points = 1001,
+        .time_steps = 40000,
+        .domain_length = 10.0,
+        .time_step_size = 0.001
+    };
+
+    BurgersSolver1d random_function_solver(random_function_config, f);
+
+    random_function_solver.solve();
+
+    random_function_solver.saveSolution("../data", "random_function", 1);
 
 }
 

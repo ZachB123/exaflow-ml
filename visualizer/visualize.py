@@ -144,7 +144,7 @@ def run_visualizer(folder_name, initial_speed):
     prev_button = widgets.Button(axprev, "Prev")
     play_button = widgets.Button(axplay, "Play")
     next_button = widgets.Button(axnext, "Next")
-    speed_slider = widgets.Slider(axspeed, "Speed", 0.1, 10.0, valinit=speed)
+    speed_slider = widgets.Slider(axspeed, "Speed", 0.1, 20.0, valinit=speed)
 
     prev_button.on_clicked(prev_frame)
     next_button.on_clicked(next_frame)
