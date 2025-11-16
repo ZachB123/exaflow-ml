@@ -16,6 +16,8 @@ struct SolverConfig {
 };
 
 class BurgersSolver1d {
+
+private:
     const double kinematic_viscosity;
 
     const int num_domain_points;

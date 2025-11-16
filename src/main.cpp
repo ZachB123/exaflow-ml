@@ -5,6 +5,7 @@
 #include <functional>
 
 #include "burgers.h"
+#include "initial_condition_generator.h"
 
 int main() {
     SolverConfig step_function_config = {
@@ -50,5 +51,11 @@ int main() {
 
     solver.solve();
     solver.saveSolution("../data", "sine_wave", 1);
+
+    
+    RandomInitialCondition f(5, 10, true, true);
+    std::cout << f.toString() << std::endl;
+    std::cout << f.operator()(2) << std::endl;
+
 }
 

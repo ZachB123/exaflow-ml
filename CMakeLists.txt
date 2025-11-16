@@ -14,6 +14,7 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 set(SOURCES
     src/main.cpp
     src/burgers.cpp
+    src/initial_condition_generator.cpp
 )
 
 # Executable
