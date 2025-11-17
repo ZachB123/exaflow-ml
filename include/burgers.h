@@ -17,6 +17,13 @@ struct SolverConfig {
 
 class BurgersSolver1d {
 
+public:
+    // different schemes with artificial viscosity calculation currently implemented
+    enum class Scheme {
+        FTCS,
+        LAX_WENDROFF
+    };
+
 private:
     const double kinematic_viscosity;
 
@@ -37,15 +44,17 @@ private:
     // stores all u's as we solve
     std::vector<std::vector<double>> solution_history;
 
-public:
+    double calculateArtificialViscosity(double cq, Scheme s, int i);
 
+public:
+    
     BurgersSolver1d(const SolverConfig& config);
 
     BurgersSolver1d(const SolverConfig& config, const std::function<double(double)>& initialize_conditions);
 
     void setInitialConditions(const std::function<double(double)>& initialize_conditions);
 
-    void solve();
+    void solve(double cq = 2.0);
 
     std::vector<std::vector<double>> getSolution() const;
 

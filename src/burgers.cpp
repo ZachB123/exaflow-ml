@@ -43,7 +43,7 @@ void BurgersSolver1d::setInitialConditions(const std::function<double(double)>& 
     }
 }
 
-void BurgersSolver1d::solve() {
+void BurgersSolver1d::solve(double cq) {
     std::cout << "Solving...\n";
 
     solution_history.clear();
@@ -55,7 +55,7 @@ void BurgersSolver1d::solve() {
         for (int i = 1; i < num_domain_points - 1; ++i) {
             u_next[i] = u[i]
                 - u[i] * time_step_size / spatial_step_size * (u[i] - u[i - 1])
-                + kinematic_viscosity * time_step_size / (spatial_step_size * spatial_step_size)
+                + (kinematic_viscosity + calculateArtificialViscosity(cq, Scheme::FTCS, i)) * time_step_size / (spatial_step_size * spatial_step_size)
                   * (u[i + 1] - 2 * u[i] + u[i - 1]);
         }
 
@@ -70,6 +70,29 @@ void BurgersSolver1d::solve() {
         std::swap(u, u_next);
         solution_history.push_back(u);
     }
+}
+
+double BurgersSolver1d::calculateArtificialViscosity(double cq, Scheme s, int i) {
+    double artvis;
+    double ux;
+
+    switch (s) {
+    case Scheme::FTCS:
+        // linear artificial viscosity model, not quadratic RVN
+        ux = (u[i + 1] - u[i - 1]) / (2.0 * spatial_step_size);
+        // Only take artificial viscosity when in compression
+        artvis = (ux < 0) ? cq * spatial_step_size * spatial_step_size * std::abs(ux) : 0.0;
+        break;
+    case Scheme::LAX_WENDROFF:
+        ux = (u[i + 1] - u[i - 1]) / (2.0 * spatial_step_size);
+        artvis = (ux < 0) ? cq * spatial_step_size * spatial_step_size * std::abs(ux) : 0.0;
+        break;
+    default:
+        artvis = 0.0;
+        break;
+    }
+
+    return artvis; 
 }
 
 std::vector<std::vector<double>> BurgersSolver1d::getSolution() const {
@@ -120,7 +143,3 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
 
     std::cout << "All timesteps written successfully.\n";
 }
-
-
-
-

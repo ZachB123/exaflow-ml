@@ -8,6 +8,7 @@
 #include "initial_condition_generator.h"
 
 int main() {
+
     SolverConfig step_function_config = {
         .kinematic_viscosity = 0.01,
         .num_domain_points = 201,
@@ -37,7 +38,7 @@ int main() {
         .kinematic_viscosity = 0.01,
         .num_domain_points = 201,
         // last point before nans
-        .time_steps = 1160,
+        .time_steps = 5000,
         .domain_length = 2.0 * M_PI,
         .time_step_size = 0.001
     };
@@ -61,7 +62,7 @@ int main() {
         .num_domain_points = 1001,
         .time_steps = 40000,
         .domain_length = 10.0,
-        .time_step_size = 0.001
+        .time_step_size = 0.001,
     };
 
     BurgersSolver1d random_function_solver(random_function_config, f);
@@ -69,6 +70,4 @@ int main() {
     random_function_solver.solve();
 
     random_function_solver.saveSolution("../data", "random_function", 1);
-
 }
-
