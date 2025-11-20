@@ -54,7 +54,7 @@ public:
 
     void setInitialConditions(const std::function<double(double)>& initialize_conditions);
 
-    void solve(double cq = 2.0);
+    void solve(double cq = 2.0, Scheme scheme = Scheme::LAX_WENDROFF);
 
     std::vector<std::vector<double>> getSolution() const;
 

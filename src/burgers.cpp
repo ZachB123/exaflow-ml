@@ -43,7 +43,7 @@ void BurgersSolver1d::setInitialConditions(const std::function<double(double)>& 
     }
 }
 
-void BurgersSolver1d::solve(double cq) {
+void BurgersSolver1d::solve(double cq, Scheme scheme) {
     std::cout << "Solving...\n";
 
     solution_history.clear();
@@ -51,21 +51,83 @@ void BurgersSolver1d::solve(double cq) {
     solution_history.push_back(u);
 
     for (int time_step = 0; time_step < time_steps; ++time_step) {
-
-        for (int i = 1; i < num_domain_points - 1; ++i) {
+        switch (scheme) {
+            case Scheme::FTCS:
+            {
+                for (int i = 1; i < num_domain_points - 1; ++i) {
             u_next[i] = u[i]
-                - u[i] * time_step_size / spatial_step_size * (u[i] - u[i - 1])
+                - u[i] * time_step_size / spatial_step_size * (u[i + 1] - u[i - 1])
                 + (kinematic_viscosity + calculateArtificialViscosity(cq, Scheme::FTCS, i)) * time_step_size / (spatial_step_size * spatial_step_size)
                   * (u[i + 1] - 2 * u[i] + u[i - 1]);
-        }
+            }
 
-        // wrap around
-        u_next[0] = u[0]
-            - u[0] * time_step_size / spatial_step_size * (u[0] - u[num_domain_points - 2])
-            + kinematic_viscosity * time_step_size / (spatial_step_size * spatial_step_size)
-              * (u[1] - 2 * u[0] + u[num_domain_points - 2]);
+            // wrap around
+            u_next[0] = u[0]
+                - u[0] * time_step_size / spatial_step_size * (u[0] - u[num_domain_points - 2])
+                + kinematic_viscosity * time_step_size / (spatial_step_size * spatial_step_size)
+                * (u[1] - 2 * u[0] + u[num_domain_points - 2]);
 
-        u_next[num_domain_points - 1] = u_next[0];
+            u_next[num_domain_points - 1] = u_next[0];
+            }
+            break;
+            case Scheme::LAX_WENDROFF:
+            {
+                double dt = time_step_size;
+                double dx = spatial_step_size;
+
+                // interior
+                for (int i = 1; i < num_domain_points - 1; ++i) {
+
+                    double f_ip = 0.5 * u[i+1] * u[i+1];
+                    double f_i  = 0.5 * u[i]   * u[i];
+                    double f_im = 0.5 * u[i-1] * u[i-1];
+
+                    double a_ip = 0.5 * (u[i] + u[i+1]);
+                    double a_im = 0.5 * (u[i-1] + u[i]);
+
+                    double convective =
+                        -(dt/(2*dx)) * (f_ip - f_im)
+                        + (dt*dt/(2*dx*dx)) * ( a_ip * (f_ip - f_i) - a_im * (f_i - f_im) );
+
+                    u_next[i] =
+                        u[i] + convective +
+                        (kinematic_viscosity + calculateArtificialViscosity(cq, Scheme::LAX_WENDROFF, i))
+                        * dt/(dx*dx)
+                        * (u[i+1] - 2*u[i] + u[i-1]);
+                }
+
+                // boundary i=0 (periodic)
+                int i = 0;
+                int ip = 1;
+                int im = num_domain_points - 2;
+
+                double f_ip = 0.5 * u[ip] * u[ip];
+                double f_i  = 0.5 * u[i]  * u[i];
+                double f_im = 0.5 * u[im] * u[im];
+
+                double a_ip = 0.5 * (u[i] + u[ip]);
+                double a_im = 0.5 * (u[im] + u[i]);
+
+                double convective =
+                    -(dt/(2*dx)) * (f_ip - f_im)
+                    + (dt*dt/(2*dx*dx)) * ( a_ip * (f_ip - f_i) - a_im * (f_i - f_im) );
+
+                u_next[i] =
+                    u[i] + convective +
+                    (kinematic_viscosity + calculateArtificialViscosity(cq, Scheme::LAX_WENDROFF, i))
+                    * dt/(dx*dx)
+                    * (u[ip] - 2*u[i] + u[im]);
+
+                // enforce periodicity
+                u_next[num_domain_points - 1] = u_next[0];
+            }
+            break;
+            default:
+                {
+                    std::cerr << "Error: unknown scheme selected!\n";
+                    return;   // or throw, depending on your design
+                }
+        }            
 
         std::swap(u, u_next);
         solution_history.push_back(u);
