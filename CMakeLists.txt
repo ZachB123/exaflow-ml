@@ -10,14 +10,21 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
 
-# Source files
-set(SOURCES
-    src/main.cpp
+set(SHARED_SOURCES
     src/burgers.cpp
     src/initial_condition_generator.cpp
     src/stencils/ftcs.cpp
     src/stencils/lax_wendroff.cpp
 )
 
-# Executable
-add_executable(burgers ${SOURCES})
+# regular experimental solver
+add_executable(burgers
+    src/main.cpp
+    ${SHARED_SOURCES}
+)
+
+# program to create our training data
+# add_executable(training_data_generator
+#     src/training_data_generator.cpp
+#     ${SHARED_SOURCES}
+# )

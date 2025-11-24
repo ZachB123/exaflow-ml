@@ -17,13 +17,6 @@ struct SolverConfig {
 
 class BurgersSolver1d {
 
-public:
-    // different schemes with artificial viscosity calculation currently implemented
-    enum class Scheme {
-        FTCS,
-        LAX_WENDROFF
-    };
-
 private:
     // used for calculating spatial step size and number of domain points
     inline static const double ALPHA = 0.9;
@@ -60,8 +53,6 @@ private:
 
     double approximate_max_u() const;
 
-    double calculateArtificialViscosity(double cq, Scheme s, int i, double spatial_step_size);
-
 public:
     
     BurgersSolver1d(const std::unique_ptr<BurgerStencil> stencil, const SolverConfig& config);
@@ -70,7 +61,7 @@ public:
 
     void setInitialConditions(const std::function<double(double)>& initialize_conditions);
 
-    void solve(double cq = 2.0, Scheme scheme = Scheme::LAX_WENDROFF);
+    void solve(double cq = 2.0);
 
     std::vector<std::vector<double>> getSolution() const;
 

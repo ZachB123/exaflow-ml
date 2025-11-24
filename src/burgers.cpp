@@ -51,10 +51,8 @@ double BurgersSolver1d::approximate_max_u() const {
     return max_u;
 }
 
-void BurgersSolver1d::solve(double cq, Scheme scheme) {
+void BurgersSolver1d::solve(double cq) {
     std::cout << "Solving...\n";
-
-    std::cout << "cq " << cq << " scheme " << static_cast<int>(scheme) << "\n";
 
     if (!initial_conditions) {
         throw std::runtime_error("No Initial Condition Function.");
