@@ -5,13 +5,13 @@
 #include <functional>
 
 #include "burgers.h"
+#include "burger_stencil.h"
 #include "initial_condition_generator.h"
 
 int main() {
 
     SolverConfig step_function_config = {
         .kinematic_viscosity = 0.01,
-        .num_domain_points = 201,
         .time_steps = 2000,
         .domain_length = 2.0,
         .time_step_size = 0.001
@@ -27,7 +27,10 @@ int main() {
         }
     };
 
-    BurgersSolver1d step_function_solver(step_function_config, step_function);
+    BurgersSolver1d step_function_solver(
+        std::make_unique<LaxWendroff>(),
+        step_function_config, 
+        step_function);
 
     step_function_solver.solve();
 
@@ -36,8 +39,6 @@ int main() {
 
     SolverConfig sine_wave_config = {
         .kinematic_viscosity = 0.01,
-        .num_domain_points = 201,
-        // last point before nans
         .time_steps = 5000,
         .domain_length = 2.0 * M_PI,
         .time_step_size = 0.001
@@ -48,7 +49,10 @@ int main() {
         return std::sin(x);
     };
 
-    BurgersSolver1d solver(sine_wave_config, sine_function);
+    BurgersSolver1d solver(
+        std::make_unique<LaxWendroff>(), 
+        sine_wave_config, 
+        sine_function);
 
     solver.solve();
     solver.saveSolution("../data", "sine_wave", 1);
@@ -59,13 +63,15 @@ int main() {
 
     SolverConfig random_function_config = {
         .kinematic_viscosity = 0.01,
-        .num_domain_points = 1001,
-        .time_steps = 40000,
+        .time_steps = 10000,
         .domain_length = 10.0,
         .time_step_size = 0.001,
     };
 
-    BurgersSolver1d random_function_solver(random_function_config, f);
+    BurgersSolver1d random_function_solver(
+        std::make_unique<FTCS>(),
+        random_function_config, 
+        f);
 
     random_function_solver.solve();
 

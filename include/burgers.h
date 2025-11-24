@@ -2,17 +2,17 @@
 #include <functional>
 #include <vector>
 
+#include "burger_stencil.h"
+
 struct SolverConfig {
     // viscosity coefficient for viscous burgers
     double kinematic_viscosity;
-    // how many points our domain is discretized to
-    int num_domain_points;
     // how many iterations we will simulate
     int time_steps;
-    // how long is the x axis are equation is defined on
-    double domain_length;
     // length of time each time step is
     double time_step_size;
+    // how long is the x axis are equation is defined on
+    double domain_length;
 };
 
 class BurgersSolver1d {
@@ -25,17 +25,22 @@ public:
     };
 
 private:
-    const double kinematic_viscosity;
+    // used for calculating spatial step size and number of domain points
+    inline static const double ALPHA = 0.9;
 
-    const int num_domain_points;
+    // stencil for solving
+    std::unique_ptr<BurgerStencil> stencil;
+
+    // kinematic viscosity as shown in the burgers equation
+    const double kinematic_viscosity;
     
+    // how many times will we run our solver
     const int time_steps;
 
-    [[maybe_unused]] const double domain_length;
+    // how long is our initial condition domain (x axis)
+    const double domain_length;
 
-    // how big of jumps we take in the domain duch that we have num_domain_points points
-    const double spatial_step_size;
-
+    // how much time do we step for each solver iteration
     const double time_step_size;
 
     // the current velocity field
@@ -44,13 +49,24 @@ private:
     // stores all u's as we solve
     std::vector<std::vector<double>> solution_history;
 
-    double calculateArtificialViscosity(double cq, Scheme s, int i);
+    // the function that we are using to define our initial conditions
+    std::function<double(double)> initial_conditions;
+
+    // how many points we calculate the value for in our domain
+    int most_recent_num_domain_points;
+
+    // how big of jumps we take in the domain duch that we have num_domain_points points
+    double most_recent_spatial_step_size;
+
+    double approximate_max_u() const;
+
+    double calculateArtificialViscosity(double cq, Scheme s, int i, double spatial_step_size);
 
 public:
     
-    BurgersSolver1d(const SolverConfig& config);
+    BurgersSolver1d(const std::unique_ptr<BurgerStencil> stencil, const SolverConfig& config);
 
-    BurgersSolver1d(const SolverConfig& config, const std::function<double(double)>& initialize_conditions);
+    BurgersSolver1d(const std::unique_ptr<BurgerStencil> stencil, const SolverConfig& config, const std::function<double(double)>& initialize_conditions);
 
     void setInitialConditions(const std::function<double(double)>& initialize_conditions);
 

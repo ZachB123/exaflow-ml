@@ -8,153 +8,95 @@
 #include "burgers.h"
 
 
-BurgersSolver1d::BurgersSolver1d(const SolverConfig& config)
-    :   kinematic_viscosity(config.kinematic_viscosity),
-        num_domain_points(config.num_domain_points),
+BurgersSolver1d::BurgersSolver1d(std::unique_ptr<BurgerStencil> stencil, const SolverConfig& config)
+    :   
+        stencil(std::move(stencil)),
+        kinematic_viscosity(config.kinematic_viscosity),
         time_steps(config.time_steps),
         domain_length(config.domain_length),
-        spatial_step_size(config.domain_length / (config.num_domain_points - 1)),
         time_step_size(config.time_step_size),
-        u(num_domain_points, 0.0),
         solution_history()
 {}
 
 BurgersSolver1d::BurgersSolver1d(
+    std::unique_ptr<BurgerStencil> stencil,
     const SolverConfig& config,
-    const std::function<double(double)>& initialize_conditions
+    const std::function<double(double)>& initial_conditions
 )
-    :   kinematic_viscosity(config.kinematic_viscosity),
-        num_domain_points(config.num_domain_points),
+    :   
+        stencil(std::move(stencil)),
+        kinematic_viscosity(config.kinematic_viscosity),
         time_steps(config.time_steps),
         domain_length(config.domain_length),
-        spatial_step_size(config.domain_length / (config.num_domain_points - 1)),
         time_step_size(config.time_step_size),
-        u(num_domain_points, 0.0),
-        solution_history()
-{
-    setInitialConditions(initialize_conditions);
+        solution_history(),
+        initial_conditions(initial_conditions)
+{}
+
+void BurgersSolver1d::setInitialConditions(const std::function<double(double)>& initial_conditions) {
+    this->initial_conditions = initial_conditions;
 }
 
-void BurgersSolver1d::setInitialConditions(const std::function<double(double)>& initialize_conditions) {
-    std::cout << "Setting initial conditions...\n";
-    for (int i = 0; i < num_domain_points; ++i) {
-        double x = i * spatial_step_size;
-        u[i] = initialize_conditions(x);
+double BurgersSolver1d::approximate_max_u() const {
+    double max_u = 0.0;
+    // this is a good approximation since the actual step size will be (time_step_size * max_u) / ALPHA
+    double approximate_step_size = time_step_size / ALPHA;
+    int approximate_number_of_domain_points = std::floor(domain_length / approximate_step_size);
+
+    for (int i = 0; i < approximate_number_of_domain_points; ++i) {
+        double x = i * approximate_step_size;
+        max_u = std::max(max_u, std::abs(initial_conditions(x)));
     }
+
+    return max_u;
 }
 
 void BurgersSolver1d::solve(double cq, Scheme scheme) {
     std::cout << "Solving...\n";
+
+    std::cout << "cq " << cq << " scheme " << static_cast<int>(scheme) << "\n";
+
+    if (!initial_conditions) {
+        throw std::runtime_error("No Initial Condition Function.");
+    }
+
+    double max_u = approximate_max_u();
+    double spatial_step_size = time_step_size * max_u / ALPHA;
+    // This spatial stepsize is bullshit and not actually what we want to use
+    // if we use the previous calculation it just blows everything up
+    spatial_step_size = 0.01;
+    // spatial_step_size = domain_length / 1000.0;
+    double num_domain_points = std::floor(domain_length / spatial_step_size);
+    u.assign(num_domain_points, 0.0);
+
+    most_recent_spatial_step_size = spatial_step_size;
+    most_recent_num_domain_points = num_domain_points;
+
+    std::cout << "Computing with " << num_domain_points << " domain points.\n";
+
+    std::cout << "Setting initial conditions...\n";
+    for (int i = 0; i < num_domain_points; ++i) {
+        double x = i * spatial_step_size;
+        u[i] = initial_conditions(x);
+    }
 
     solution_history.clear();
     std::vector<double> u_next(num_domain_points, 0.0);
     solution_history.push_back(u);
 
     for (int time_step = 0; time_step < time_steps; ++time_step) {
-        switch (scheme) {
-            case Scheme::FTCS:
-            {
-                for (int i = 1; i < num_domain_points - 1; ++i) {
-            u_next[i] = u[i]
-                - u[i] * time_step_size / spatial_step_size * (u[i + 1] - u[i - 1])
-                + (kinematic_viscosity + calculateArtificialViscosity(cq, Scheme::FTCS, i)) * time_step_size / (spatial_step_size * spatial_step_size)
-                  * (u[i + 1] - 2 * u[i] + u[i - 1]);
-            }
-
-            // wrap around
-            u_next[0] = u[0]
-                - u[0] * time_step_size / spatial_step_size * (u[0] - u[num_domain_points - 2])
-                + kinematic_viscosity * time_step_size / (spatial_step_size * spatial_step_size)
-                * (u[1] - 2 * u[0] + u[num_domain_points - 2]);
-
-            u_next[num_domain_points - 1] = u_next[0];
-            }
-            break;
-            case Scheme::LAX_WENDROFF:
-            {
-                double dt = time_step_size;
-                double dx = spatial_step_size;
-
-                // interior
-                for (int i = 1; i < num_domain_points - 1; ++i) {
-
-                    double f_ip = 0.5 * u[i+1] * u[i+1];
-                    double f_i  = 0.5 * u[i]   * u[i];
-                    double f_im = 0.5 * u[i-1] * u[i-1];
-
-                    double a_ip = 0.5 * (u[i] + u[i+1]);
-                    double a_im = 0.5 * (u[i-1] + u[i]);
-
-                    double convective =
-                        -(dt/(2*dx)) * (f_ip - f_im)
-                        + (dt*dt/(2*dx*dx)) * ( a_ip * (f_ip - f_i) - a_im * (f_i - f_im) );
-
-                    u_next[i] =
-                        u[i] + convective +
-                        (kinematic_viscosity + calculateArtificialViscosity(cq, Scheme::LAX_WENDROFF, i))
-                        * dt/(dx*dx)
-                        * (u[i+1] - 2*u[i] + u[i-1]);
-                }
-
-                // boundary i=0 (periodic)
-                int i = 0;
-                int ip = 1;
-                int im = num_domain_points - 2;
-
-                double f_ip = 0.5 * u[ip] * u[ip];
-                double f_i  = 0.5 * u[i]  * u[i];
-                double f_im = 0.5 * u[im] * u[im];
-
-                double a_ip = 0.5 * (u[i] + u[ip]);
-                double a_im = 0.5 * (u[im] + u[i]);
-
-                double convective =
-                    -(dt/(2*dx)) * (f_ip - f_im)
-                    + (dt*dt/(2*dx*dx)) * ( a_ip * (f_ip - f_i) - a_im * (f_i - f_im) );
-
-                u_next[i] =
-                    u[i] + convective +
-                    (kinematic_viscosity + calculateArtificialViscosity(cq, Scheme::LAX_WENDROFF, i))
-                    * dt/(dx*dx)
-                    * (u[ip] - 2*u[i] + u[im]);
-
-                // enforce periodicity
-                u_next[num_domain_points - 1] = u_next[0];
-            }
-            break;
-            default:
-                {
-                    std::cerr << "Error: unknown scheme selected!\n";
-                    return;   // or throw, depending on your design
-                }
-        }            
+        stencil->calculateNextU(
+            u, 
+            u_next, 
+            cq, 
+            num_domain_points, 
+            time_step_size, 
+            spatial_step_size, 
+            kinematic_viscosity);            
 
         std::swap(u, u_next);
         solution_history.push_back(u);
     }
-}
-
-double BurgersSolver1d::calculateArtificialViscosity(double cq, Scheme s, int i) {
-    double artvis;
-    double ux;
-
-    switch (s) {
-    case Scheme::FTCS:
-        // linear artificial viscosity model, not quadratic RVN
-        ux = (u[i + 1] - u[i - 1]) / (2.0 * spatial_step_size);
-        // Only take artificial viscosity when in compression
-        artvis = (ux < 0) ? cq * spatial_step_size * spatial_step_size * std::abs(ux) : 0.0;
-        break;
-    case Scheme::LAX_WENDROFF:
-        ux = (u[i + 1] - u[i - 1]) / (2.0 * spatial_step_size);
-        artvis = (ux < 0) ? cq * spatial_step_size * spatial_step_size * std::abs(ux) : 0.0;
-        break;
-    default:
-        artvis = 0.0;
-        break;
-    }
-
-    return artvis; 
 }
 
 std::vector<std::vector<double>> BurgersSolver1d::getSolution() const {
@@ -197,8 +139,8 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
         file << "x,u\n";
 
         const auto& u_t = solution_history[t];
-        for (int i = 0; i < num_domain_points; ++i) {
-            double x = i * spatial_step_size;  // compute x-coordinate
+        for (int i = 0; i < most_recent_num_domain_points; ++i) {
+            double x = i * most_recent_spatial_step_size;  // compute x-coordinate
             file << x << "," << u_t[i] << "\n";
         }
     }
