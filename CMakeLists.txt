@@ -24,7 +24,7 @@ add_executable(burgers
 )
 
 # program to create our training data
-# add_executable(training_data_generator
-#     src/training_data_generator.cpp
-#     ${SHARED_SOURCES}
-# )
+add_executable(training_data_generator
+    src/training_data_generator.cpp
+    ${SHARED_SOURCES}
+)
