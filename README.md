@@ -1,6 +1,6 @@
 # 1D Burgers' Equation Solver
 
-A C++ implementation of a 1D Burgers' equation solver using finite difference methods. This solver can simulate both inviscid and viscous Burgers' equations with customizable initial conditions.
+A C++ implementation of a 1D Burgers' equation solver using finite difference methods with support for multiple numerical schemes, artificial viscosity, and automated training data generation. This solver can simulate both inviscid and viscous Burgers' equations with customizable or randomly generated initial conditions.
 
 ## What is Burgers' Equation?
 
@@ -15,16 +15,23 @@ This makes it useful for understanding shock waves, traffic flow, and basic flui
 ```
 .
 ├── include/
-│   └── burgers.h          # Header file with BurgersSolver1d class
+│   ├── burgers.h                      # BurgersSolver1d class definition
+│   ├── burger_stencil.h               # Abstract stencil interface and implementations
+│   └── initial_condition_generator.h  # Random initial condition generator
 ├── src/
-│   ├── main.cpp           # Example simulations
-│   └── burgers.cpp        # Solver implementation
+│   ├── main.cpp                       # Example simulations
+│   ├── burgers.cpp                    # Solver implementation
+│   ├── training_data_generator.cpp    # Automated training data generation
+│   ├── initial_condition_generator.cpp # Random IC implementation
+│   └── stencils/
+│       ├── ftcs.cpp                   # Forward-Time Central-Space scheme
+│       └── lax_wendroff.cpp          # Lax-Wendroff scheme
 ├── visualizer/
-│   └── visualize.py       # Display the burgers equations you have ran
-├── CMakeLists.txt         # Build configuration
-├── requirements.txt       # Python Libraries
-└── data/                  # Output directory (created at runtime)
-
+│   └── visualize.py                   # Interactive visualization tool
+├── CMakeLists.txt                     # Build configuration
+├── requirements.txt                   # Python dependencies
+├── data/                              # Output directory for experiments
+└── training_data/                     # Output directory for training samples
 ```
 
 ## Building the Project
@@ -32,6 +39,7 @@ This makes it useful for understanding shock waves, traffic flow, and basic flui
 ### Prerequisites
 - CMake 3.10 or higher
 - C++17 compatible compiler (GCC, Clang, or MSVC)
+- Python 3.x (for visualization)
 
 ### Build Instructions
 
@@ -51,47 +59,73 @@ cmake ..
 make
 ```
 
-4. Run the executable:
+4. Run the executables:
 ```bash
+# Run example simulations
 ./burgers
+
+# Generate training data
+./training_data_generator
 ```
 
-The program will generate output in the `../data` directory relative to the build folder.
+The programs will generate output in `../data` and `../training_data` directories.
+
+## Numerical Schemes
+
+The solver supports multiple finite difference schemes through a polymorphic stencil architecture:
+
+### Available Stencils
+
+#### 1. FTCS (Forward-Time Central-Space)
+- Simple explicit scheme
+- First-order accurate in time, second-order in space
+- Includes artificial viscosity for shock capturing
+- Good for smooth solutions
+
+#### 2. Lax-Wendroff
+- Two-step predictor-corrector method
+- Second-order accurate in both time and space
+- Better for capturing sharp gradients and shocks
+- More computationally expensive than FTCS
+
+Both schemes implement artificial viscosity to stabilize solutions near shocks:
+```cpp
+// Applied only in compression regions (∂u/∂x < 0)
+artificial_viscosity = cq * dx² * |∂u/∂x|
+```
 
 ## How to Use
 
 ### Creating a Simulation
 
-To set up a simulation, you need two components:
-
 #### 1. Solver Configuration
 
-Define a `SolverConfig` struct with the following parameters:
+Define a `SolverConfig` struct:
 
 ```cpp
 SolverConfig config = {
-    .kinematic_viscosity = 0.01,    // Viscosity coefficient (ν)
-    .num_domain_points = 201,       // Number of spatial grid points
+    .kinematic_viscosity = 0.01,    // Physical viscosity coefficient (ν)
     .time_steps = 2000,             // Number of time iterations
-    .domain_length = 2.0,           // Length of spatial domain
-    .time_step_size = 0.001         // Time step size (Δt)
+    .time_step_size = 0.001,        // Time step size (Δt)
+    .domain_length = 2.0            // Length of spatial domain [0, L]
 };
 ```
 
 **Parameter Explanation:**
-- `kinematic_viscosity`: Controls diffusion/smoothing (higher = more smoothing)
-- `num_domain_points`: Spatial resolution (more points = finer detail)
-- `time_steps`: How long to simulate
-- `domain_length`: The interval [0, L] over which the equation is solved
-- `time_step_size`: Time between updates (smaller = more accurate but slower)
+- `kinematic_viscosity`: Controls physical diffusion (higher = more smoothing)
+- `time_steps`: Number of temporal iterations
+- `time_step_size`: Time increment between updates
+- `domain_length`: Spatial domain interval [0, L]
+
+**Note**: The spatial grid resolution is automatically computed based on stability requirements using `ALPHA = 0.9` and the maximum velocity in the initial condition.
 
 #### 2. Initial Condition Function
 
-Define a lambda or function that specifies the initial velocity profile:
+Define a function specifying the initial velocity profile:
 
 ```cpp
-// Example: Step function
-std::function step_function = [](double x) -> double {
+// Step function
+std::function<double(double)> step_function = [](double x) -> double {
     if (x >= 0.5 && x <= 1.0) {
         return 2.0;
     } else {
@@ -99,109 +133,365 @@ std::function step_function = [](double x) -> double {
     }
 };
 
-// Example: Sine wave
-std::function sine_function = [](double x) -> double {
+// Sine wave
+std::function<double(double)> sine_function = [](double x) -> double {
     return std::sin(x);
 };
 ```
 
-The function takes a position `x` and returns the initial velocity `u(x, t=0)` at that point.
-
 #### 3. Create and Run the Solver
 
 ```cpp
-// Create solver with configuration and initial conditions
-BurgersSolver1d solver(config, step_function);
+// Create solver with chosen stencil
+BurgersSolver1d solver(
+    std::make_unique<LaxWendroff>(),  // or std::make_unique<FTCS>()
+    config,
+    step_function
+);
 
-// Run the simulation
-solver.solve();
+// Run simulation with artificial viscosity coefficient
+solver.solve(2.0);  // cq = 2.0
 
-// Save results (folder, run_name, gap)
-solver.saveSolution("../data", "my_simulation", 10);
+// Save results (base_folder, run_name, gap)
+solver.saveSolution("../data", "step_function", 10);
 ```
 
-The `gap` parameter in `saveSolution` controls output frequency (e.g., `10` saves every 10th timestep).
+The `gap` parameter controls output frequency (e.g., `10` saves every 10th timestep).
+
+### Random Initial Conditions
+
+Generate random superpositions of sinusoids for training data:
+
+```cpp
+// Configure random initial condition generator
+RandomInitialConditionConfig config;
+config.n = 5;                               // Number of sinusoidal terms
+config.domain_length = 10.0;                // Domain size
+config.amp_min = -1.0;                      // Min amplitude
+config.amp_max = 1.0;                       // Max amplitude
+config.frequency_multiplier_min = 0.1;      // Min frequency multiplier
+config.frequency_multiplier_max = 5.0;      // Max frequency multiplier
+config.wrap_around_frequency_multiplier_min = 1;   // Min Fourier mode
+config.wrap_around_frequency_multiplier_max = 5;   // Max Fourier mode
+
+// Create random IC (config, alwaysPositive, wrapAround, seed)
+RandomInitialCondition f(config, false, true);
+
+// Use in solver
+BurgersSolver1d solver(
+    std::make_unique<FTCS>(),
+    solver_config,
+    f
+);
+
+solver.solve();
+solver.saveSolution("../data", "random_function", 1);
+
+// Save metadata for reproducibility
+f.saveMetadataJSON("../data", "random_function");
+```
+
+**Random IC Parameters:**
+- `alwaysPositive`: If true, adds bias to ensure f(x) ≥ 0
+- `wrapAround`: If true, uses Fourier frequencies (2πk/L) for periodic BCs
+- `seed`: Random seed for reproducibility
+
+The generated function has the form:
+```
+f(x) = bias + Σ[i=1 to n] A_i * sin(ω_i * (x - φ_i))
+```
+
+## Training Data Generation
+
+The `training_data_generator` executable creates datasets for machine learning applications:
+
+### Configuration
+
+Edit constants in `training_data_generator.cpp`:
+
+```cpp
+const int NUM_SAMPLES = 5;              // Number of samples to generate
+const std::string TRAINING_DIR = "../training_data";
+
+// Solver parameters
+const double KINEMATIC_VISCOSITY = 0.01;
+const int TIME_STEPS = 1000;
+const double TIME_STEP_SIZE = 0.005;
+
+// Random IC ranges
+const int N_MIN = 1;                    // Min number of terms
+const int N_MAX = 20;                   // Max number of terms
+const double DOMAIN_MIN = 2.0;          // Min domain length
+const double DOMAIN_MAX = 100.0;        // Max domain length
+const double AMP_MIN = -10.0;           // Min amplitude
+const double AMP_MAX = 10.0;            // Max amplitude
+// ... (see source for complete list)
+```
+
+### Running the Generator
+
+```bash
+cd build
+./training_data_generator
+```
+
+This creates:
+```
+training_data/
+├── sample_000000/
+│   ├── timestep_00000.csv
+│   ├── timestep_00001.csv
+│   ├── ...
+│   └── metadata.json          # IC parameters for reproducibility
+├── sample_000001/
+│   └── ...
+└── ...
+```
+
+Each `metadata.json` contains:
+- Configuration parameters (n, domain_length, amplitude ranges, etc.)
+- Exact terms (amplitude, frequency, phase_shift for each sinusoid)
+- Bias value
 
 ## How the Solver Works
 
-### The BurgersSolver1d Class
+### Burgers' Equation
 
-The solver uses an explicit finite difference scheme to discretize Burgers' equation:
-
-**Burgers' Equation:**
 ```
 ∂u/∂t + u(∂u/∂x) = ν(∂²u/∂x²)
 ```
 
-**Discretization:**
-- **Time derivative**: Forward difference
-- **Convection term**: Backward difference (upwind scheme)
-- **Diffusion term**: Central difference
+Where:
+- `u(x,t)`: velocity field
+- `ν`: kinematic viscosity
+- `∂u/∂t`: temporal change
+- `u(∂u/∂x)`: convective (nonlinear) term
+- `ν(∂²u/∂x²)`: diffusive term
 
-**Boundary Conditions:**
-The solver implements periodic boundary conditions, meaning the solution wraps around at the domain edges (u[0] = u[N-1]).
+### FTCS Discretization
 
-### Key Methods
+```
+u_i^(n+1) = u_i^n 
+          - u_i^n * (Δt/Δx) * (u_(i+1)^n - u_(i-1)^n) / 2
+          + (ν + ν_artificial) * (Δt/Δx²) * (u_(i+1)^n - 2*u_i^n + u_(i-1)^n)
+```
 
-- `setInitialConditions()`: Initializes the velocity field u(x, 0)
-- `solve()`: Iterates through time, computing u at each timestep
-- `getSolution()`: Returns the complete solution history
-- `saveSolution()`: Exports results to CSV files
+### Lax-Wendroff Discretization
+
+Uses a two-step approach with flux-based formulation:
+- Predictor step computes intermediate fluxes
+- Corrector step updates solution
+- Second-order accurate in both space and time
+
+### Boundary Conditions
+
+Both schemes implement **periodic boundary conditions**:
+```cpp
+u[0] = u[N-1]  // Left boundary = right boundary
+```
+
+This is appropriate for:
+- Wave propagation problems
+- Fourier-based initial conditions
+- Problems without physical boundaries
+
+### Artificial Viscosity
+
+Applied in compression regions to stabilize shocks:
+
+```cpp
+double ux = (u[i+1] - u[i-1]) / (2 * dx);
+if (ux < 0) {  // Compression
+    artificial_viscosity = cq * dx² * |ux|;
+}
+```
+
+The `cq` parameter (typically 1-3) controls the amount of artificial dissipation.
+
+## Visualization
+
+The interactive visualizer allows you to play through simulation timesteps:
+
+### Setup
+
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### Usage
+
+```bash
+# Visualize data
+python visualizer/visualize.py <folder_name> --speed 1
+
+# Examples:
+python visualizer/visualize.py step_function --speed 2
+python visualizer/visualize.py sample_000000 --speed 0.5
+```
+
+**Controls:**
+- **Play/Pause**: Start/stop animation
+- **Prev/Next**: Step through frames manually
+- **Speed Slider**: Adjust playback speed (0.1 - 50 frames/tick)
+- **Lock Y Checkbox**: Toggle y-axis autoscaling
+  - Unchecked: Y-axis scales to current frame
+  - Checked: Y-axis locked to current limits
+
+The visualizer searches for data in `training_data/<folder_name>` by default.
 
 ## Output Structure
 
-Results are saved in the following structure:
+### Experiment Data (`data/`)
 
 ```
 data/
 └── [run_name]/
     ├── timestep_00000.csv
     ├── timestep_00010.csv
-    ├── timestep_00020.csv
     └── ...
 ```
 
-Each CSV file contains two columns:
+### Training Data (`training_data/`)
+
+```
+training_data/
+└── sample_XXXXXX/
+    ├── timestep_00000.csv
+    ├── timestep_00001.csv
+    ├── ...
+    └── metadata.json
+```
+
+### CSV Format
+
+Each CSV file contains:
 ```csv
 x,u
 0.0,1.0
-0.01,1.0
-0.02,1.0
+0.01,1.02
+0.02,1.05
 ...
 ```
 
-- `x`: Spatial coordinate
-- `u`: Velocity at that position
+### Metadata JSON Format
 
-### Output Location
-
-- The base output folder is `../data` relative to where you run the executable
-- If running from the `build/` directory, data appears in `data/` at the project root
-- Each simulation creates a subfolder named with the `run_name` parameter
-- Existing folders with the same name are automatically overwritten
+```json
+{
+  "config": {
+    "n": 5,
+    "domain_length": 10.0,
+    "amp_min": -1.0,
+    "amp_max": 1.0,
+    ...
+  },
+  "terms": [
+    {
+      "amplitude": 0.8,
+      "frequency": 1.5,
+      "phase_shift": 2.3
+    },
+    ...
+  ],
+  "bias": 0.0
+}
+```
 
 ## Example Simulations
 
-The included `main.cpp` demonstrates two classic test cases:
+The `main.cpp` includes three demonstrations:
 
-### 1. Step Function
-- Initial condition: velocity jump from 1 to 2
+### 1. Step Function (Lax-Wendroff)
+- Initial condition: velocity jump from 1 to 2 in [0.5, 1.0]
 - Shows shock formation and diffusion
+- Domain: [0, 2]
 
-### 2. Sine Wave
+### 2. Sine Wave (Lax-Wendroff)
 - Initial condition: sin(x) over [0, 2π]
 - Demonstrates wave steepening and breaking
+- Domain: [0, 2π]
 
-## Visualizer
+### 3. Random Function (FTCS)
+- Superposition of 5 random sinusoids
+- Tests solver with complex initial conditions
+- Domain: [0, 10]
 
-The visualizer is written in Python using MatPlotLib. To run it we must first create a virtual environment, install the requirements and then execute visualize.py
+## Stability Considerations
+
+### CFL Condition
+
+For stability, the Courant-Friedrichs-Lewy (CFL) condition must be satisfied:
 
 ```
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-// speed is an optional parameter and will default to one
-python visualize.py <folder name in data/> --speed 1
+CFL = u_max * Δt / Δx ≤ ALPHA
+```
+
+The solver automatically computes `Δx` based on:
+- `ALPHA = 0.9` (safety factor)
+- Maximum velocity in initial condition
+- Time step size
+
+### Choosing Parameters
+
+**For smooth solutions:**
+- FTCS is sufficient and faster
+- Use moderate viscosity (ν ≈ 0.01)
+- Smaller `cq` (1.0 - 2.0)
+
+**For shock problems:**
+- Lax-Wendroff captures shocks better
+- May need higher artificial viscosity
+- Larger `cq` (2.0 - 3.0)
+
+**For training data:**
+- Use consistent solver settings across samples
+- Vary initial conditions broadly
+- Save frequently to capture dynamics
+
+## Notes and Best Practices
+
+- **Memory usage**: The solver stores complete solution history in memory. For long simulations with fine grids, consider saving incrementally or using the `gap` parameter.
+  
+- **Spatial resolution**: Currently hardcoded to `dx = 0.01` (see comment in `burgers.cpp`). The automatic calculation based on CFL is disabled. Modify this for your specific needs.
+
+- **Periodic boundaries**: Suitable for wave problems but not for problems requiring inflow/outflow conditions.
+
+- **Random seed**: Use fixed seeds in `RandomInitialCondition` for reproducibility in training data.
+
+- **Visualizer data location**: By default searches `training_data/`. Modify `run_visualizer()` in `visualize.py` if using `data/` directory.
+
+- **Artificial viscosity**: Essential for capturing shocks without oscillations. Tune `cq` parameter based on problem characteristics.
+
+## Extending the Solver
+
+### Adding New Stencils
+
+1. Create a new class inheriting from `BurgerStencil` in `burger_stencil.h`
+2. Implement `calculateNextU()` and `calculateArtificialViscosity()`
+3. Add implementation file in `src/stencils/`
+4. Update `CMakeLists.txt` to include new source file
+
+Example:
+```cpp
+class MyStencil : public BurgerStencil {
+public:
+    void calculateNextU(...) override;
+protected:
+    double calculateArtificialViscosity(...) const override;
+};
+```
+
+### Custom Initial Conditions
+
+Implement any callable with signature `double(double)`:
+```cpp
+auto custom_ic = [](double x) -> double {
+    return /* your function */;
+};
 ```
 
 

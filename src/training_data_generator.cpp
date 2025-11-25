@@ -75,7 +75,6 @@ RandomInitialConditionConfig generateRandomInitialConditionConfig() {
 }
 
 
-
 int main() {
 
     for (int sample_index = 0; sample_index < NUM_SAMPLES; ++sample_index) {

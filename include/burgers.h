@@ -53,11 +53,17 @@ private:
 
     double approximate_max_u() const;
 
+
 public:
     
-    BurgersSolver1d(const std::unique_ptr<BurgerStencil> stencil, const SolverConfig& config);
+    BurgersSolver1d(
+        const std::unique_ptr<BurgerStencil> stencil, 
+        const SolverConfig& config);
 
-    BurgersSolver1d(const std::unique_ptr<BurgerStencil> stencil, const SolverConfig& config, const std::function<double(double)>& initialize_conditions);
+    BurgersSolver1d(
+        const std::unique_ptr<BurgerStencil> stencil, 
+        const SolverConfig& config, 
+        const std::function<double(double)>& initialize_conditions);
 
     void setInitialConditions(const std::function<double(double)>& initialize_conditions);
 

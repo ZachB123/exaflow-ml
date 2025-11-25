@@ -57,6 +57,7 @@ int main() {
     solver.solve();
     solver.saveSolution("../data", "sine_wave", 1);
 
+    
     RandomInitialConditionConfig functionConfig;
     RandomInitialCondition f(functionConfig, false, true);
     std::cout << f.toString() << std::endl;
@@ -76,4 +77,5 @@ int main() {
     random_function_solver.solve();
 
     random_function_solver.saveSolution("../data", "random_function", 1);
+
 }
