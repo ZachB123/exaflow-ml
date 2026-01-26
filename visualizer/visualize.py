@@ -34,8 +34,9 @@ def load_frames(data_dir):
 
 
 def run_visualizer(folder_name, initial_speed):
-    data_dir = os.path.join(PROJECT_ROOT, "training_data", folder_name)
+    # data_dir = os.path.join(PROJECT_ROOT, "training_data", folder_name)
     # data_dir = os.path.join(PROJECT_ROOT, "data", folder_name)
+    data_dir = os.path.join(PROJECT_ROOT, folder_name)
     x, frames, files = load_frames(data_dir)
 
     fig, ax = plt.subplots()

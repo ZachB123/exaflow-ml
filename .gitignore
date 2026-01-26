@@ -1,6 +1,7 @@
-.vscode
+.vscode/
 build/
 data/
 venv/
 training_data/
 .DS_Store
+*.dat

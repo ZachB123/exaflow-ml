@@ -330,8 +330,8 @@ pip install -r requirements.txt
 python visualizer/visualize.py <folder_name> --speed 1
 
 # Examples:
-python visualizer/visualize.py step_function --speed 2
-python visualizer/visualize.py sample_000000 --speed 0.5
+python visualizer/visualize.py data/step_function --speed 2
+python visualizer/visualize.py training_data/sample_000000 --speed 0.5
 ```
 
 **Controls:**

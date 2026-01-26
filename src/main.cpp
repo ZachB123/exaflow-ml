@@ -70,7 +70,7 @@ int main() {
     };
 
     BurgersSolver1d random_function_solver(
-        std::make_unique<FTCS>(),
+        std::make_unique<LaxWendroff>(),
         random_function_config, 
         f);
 

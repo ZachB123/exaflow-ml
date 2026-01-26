@@ -90,7 +90,7 @@ int main() {
         solver_cfg.time_step_size = TIME_STEP_SIZE;
 
         BurgersSolver1d solver(
-            std::make_unique<FTCS>(),
+            std::make_unique<LaxWendroff>(),
             solver_cfg,
             f
         );
