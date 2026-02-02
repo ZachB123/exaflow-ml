@@ -96,6 +96,7 @@ int main() {
         );
 
         solver.solve();
+        std::cout << "random function was nan detected: " << solver.wasNanDetected() << std::endl;
 
         std::ostringstream folder_name;
         folder_name << "sample_" << std::setw(6) << std::setfill('0') << sample_index;

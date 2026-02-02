@@ -15,7 +15,8 @@ BurgersSolver1d::BurgersSolver1d(std::unique_ptr<BurgerStencil> stencil, const S
         time_steps(config.time_steps),
         domain_length(config.domain_length),
         time_step_size(config.time_step_size),
-        solution_history()
+        solution_history(),
+        nan_detected(false)
 {}
 
 BurgersSolver1d::BurgersSolver1d(
@@ -30,7 +31,8 @@ BurgersSolver1d::BurgersSolver1d(
         domain_length(config.domain_length),
         time_step_size(config.time_step_size),
         solution_history(),
-        initial_conditions(initial_conditions)
+        initial_conditions(initial_conditions),
+        nan_detected(false)
 {}
 
 void BurgersSolver1d::setInitialConditions(const std::function<double(double)>& initial_conditions) {
@@ -57,7 +59,8 @@ void BurgersSolver1d::solve(double cq) {
     if (!initial_conditions) {
         throw std::runtime_error("No Initial Condition Function.");
     }
-
+    
+    nan_detected = false;
     double max_u = approximate_max_u();
     double spatial_step_size = time_step_size * max_u / ALPHA;
     // This spatial stepsize is bullshit and not actually what we want to use
@@ -90,7 +93,18 @@ void BurgersSolver1d::solve(double cq) {
             num_domain_points, 
             time_step_size, 
             spatial_step_size, 
-            kinematic_viscosity);            
+            kinematic_viscosity
+        );       
+        
+        // figure out if the solver crashed anywhere
+        if (!nan_detected) {
+            for (int i = 0; i < num_domain_points; i++) {
+                if (std::isnan(u_next[i])) {
+                    nan_detected = true;
+                    break;
+                }
+            }
+        }
 
         std::swap(u, u_next);
         solution_history.push_back(u);
@@ -144,4 +158,8 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
     }
 
     std::cout << "All timesteps written successfully.\n";
+}
+
+bool BurgersSolver1d::wasNanDetected() const {
+    return nan_detected;
 }
