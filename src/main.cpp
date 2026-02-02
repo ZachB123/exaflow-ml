@@ -33,9 +33,8 @@ int main() {
         step_function);
 
     step_function_solver.solve();
-
     step_function_solver.saveSolution("../data", "step_function", 1);
-
+    std::cout << "step function was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
     SolverConfig sine_wave_config = {
         .kinematic_viscosity = 0.01,
@@ -56,6 +55,7 @@ int main() {
 
     solver.solve();
     solver.saveSolution("../data", "sine_wave", 1);
+    std::cout << "sine wave was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
     
     RandomInitialConditionConfig functionConfig;
@@ -66,7 +66,7 @@ int main() {
         .kinematic_viscosity = 0.01,
         .time_steps = 10000,
         .domain_length = 10.0,
-        .time_step_size = 0.001,
+        .time_step_size = 0.0001,
     };
 
     BurgersSolver1d random_function_solver(
@@ -75,7 +75,7 @@ int main() {
         f);
 
     random_function_solver.solve();
-
     random_function_solver.saveSolution("../data", "random_function", 1);
+    std::cout << "random function was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
 }

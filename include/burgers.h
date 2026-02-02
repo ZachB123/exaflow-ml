@@ -53,6 +53,8 @@ private:
 
     double approximate_max_u() const;
 
+    // tracks if a NaN was found during the solve
+    bool nan_detected;
 
 public:
     
@@ -72,4 +74,6 @@ public:
     std::vector<std::vector<double>> getSolution() const;
 
     void saveSolution(const std::string& base_folder, const std::string& run_name, int gap) const;
+
+    bool wasNanDetected() const;
 };
