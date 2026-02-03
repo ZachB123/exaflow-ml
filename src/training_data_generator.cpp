@@ -9,13 +9,15 @@
 #include "burgers.h"
 
 // how many training samples to generate
-const int NUM_SAMPLES = 5;
-const std::string TRAINING_DIR = "../training_data"; 
+// Increased for large-scale ML training
+const int NUM_SAMPLES = 10000;
+const std::string TRAINING_DIR = "../training_data";
 
 // constant solver configurations
+// Increased time steps and reduced time step size for higher resolution
 const double KINEMATIC_VISCOSITY = 0.01;
-const int TIME_STEPS = 1000; // small for debugging purposes
-const double TIME_STEP_SIZE = 0.005; // large for debugging purposes
+const int TIME_STEPS = 20000;         // Higher for high-res data
+const double TIME_STEP_SIZE = 0.0001; // Smaller for high-res data
 
 // n (number of terms)
 const int N_MIN = 1;
@@ -37,8 +39,8 @@ const double FREQ_MAX = 20.0;
 const int WRAP_K_MIN = 1;
 const int WRAP_K_MAX = 20;
 
-
-RandomInitialConditionConfig generateRandomInitialConditionConfig() {
+RandomInitialConditionConfig generateRandomInitialConditionConfig()
+{
     static std::random_device rd;
     static std::mt19937 rng(rd());
 
@@ -74,10 +76,11 @@ RandomInitialConditionConfig generateRandomInitialConditionConfig() {
     return cfg;
 }
 
+int main()
+{
 
-int main() {
-
-    for (int sample_index = 0; sample_index < NUM_SAMPLES; ++sample_index) {
+    for (int sample_index = 0; sample_index < NUM_SAMPLES; ++sample_index)
+    {
 
         RandomInitialConditionConfig cfg = generateRandomInitialConditionConfig();
 
@@ -92,8 +95,7 @@ int main() {
         BurgersSolver1d solver(
             std::make_unique<LaxWendroff>(),
             solver_cfg,
-            f
-        );
+            f);
 
         solver.solve();
         std::cout << "random function was nan detected: " << solver.wasNanDetected() << std::endl;
