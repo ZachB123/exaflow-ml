@@ -20,7 +20,7 @@ void LaxWendroff::calculateNextU(const std::vector<double>& u, std::vector<doubl
 
         u_next[i] =
             u[i] + convective +
-            (kinematic_viscosity + calculateArtificialViscosity(u, cq, spatial_step_size, i))
+            (kinematic_viscosity + calculateArtificialViscosity(u, cq, spatial_step_size, i, num_domain_points))
             * dt / (dx * dx)
             * (u[i + 1] - 2 * u[i] + u[i - 1]);
     }
@@ -43,7 +43,7 @@ void LaxWendroff::calculateNextU(const std::vector<double>& u, std::vector<doubl
 
     u_next[i] =
         u[i] + convective +
-        (kinematic_viscosity + calculateArtificialViscosity(u, cq, spatial_step_size, i))
+        (kinematic_viscosity + calculateArtificialViscosity(u, cq, spatial_step_size, i, num_domain_points))
         * dt / (dx * dx)
         * (u[ip] - 2 * u[i] + u[im]);
 
@@ -51,9 +51,9 @@ void LaxWendroff::calculateNextU(const std::vector<double>& u, std::vector<doubl
     u_next[num_domain_points - 1] = u_next[0];
 }
 
-double LaxWendroff::calculateArtificialViscosity(const std::vector<double>& u, double cq, double spatial_step_size, int i) const {
+double LaxWendroff::calculateArtificialViscosity(const std::vector<double>& u, double cq, double spatial_step_size, int i, int num_domain_points) const {
     // linear artificial viscosity model, not quadratic RVN
-    double ux = (u[i + 1] - u[i - 1]) / (2.0 * spatial_step_size);
+    double ux = (i == 0) ? (u[i + 1] - u[num_domain_points - 2]) / (2.0 * spatial_step_size) : (u[i + 1] - u[i - 1]) / (2.0 * spatial_step_size);
     // Only take artificial viscosity when in compression
     double artvis = (ux < 0) ? cq * spatial_step_size * spatial_step_size * std::abs(ux) : 0.0;
 
