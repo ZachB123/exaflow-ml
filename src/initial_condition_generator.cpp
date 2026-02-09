@@ -62,7 +62,12 @@ double RandomInitialCondition::operator()(double x) const {
 
 
 void RandomInitialCondition::saveMetadataJSON(const std::filesystem::path& base_path,
-                                              const std::filesystem::path& sample_folder) const
+                                              const std::filesystem::path& sample_folder,
+                                              int time_steps,
+                                              double time_step_size,
+                                              int num_domain_points,
+                                              double spatial_step_size,
+                                              const std::string& stencil_name) const
 {
     std::filesystem::path folder = base_path / sample_folder;
 
@@ -105,7 +110,15 @@ void RandomInitialCondition::saveMetadataJSON(const std::filesystem::path& base_
     }
     file << "  ],\n\n";
 
-    file << "  \"bias\": " << bias << "\n";
+    file << "  \"bias\": " << bias << ",\n\n";
+
+    file << "  \"solver\": {\n";
+    file << "    \"time_steps\": " << time_steps << ",\n";
+    file << "    \"time_step_size\": " << time_step_size << ",\n";
+    file << "    \"num_domain_points\": " << num_domain_points << ",\n";
+    file << "    \"spatial_step_size\": " << spatial_step_size << ",\n";
+    file << "    \"stencil_name\": \"" << stencil_name << "\"\n";
+    file << "  }\n";
     file << "}\n";
 }
 

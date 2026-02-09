@@ -27,3 +27,7 @@ double FTCS::calculateArtificialViscosity(const std::vector<double>& u, double c
 
     return artificial_viscosity;
 }
+
+std::string FTCS::getName() const {
+    return "FTCS";
+}

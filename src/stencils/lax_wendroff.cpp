@@ -60,3 +60,7 @@ double LaxWendroff::calculateArtificialViscosity(const std::vector<double>& u, d
     return artvis;
 }
 
+std::string LaxWendroff::getName() const {
+    return "LaxWendroff";
+}
+

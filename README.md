@@ -186,9 +186,6 @@ BurgersSolver1d solver(
 
 solver.solve();
 solver.saveSolution("../data", "random_function", 1);
-
-// Save metadata for reproducibility
-f.saveMetadataJSON("../data", "random_function");
 ```
 
 **Random IC Parameters:**
@@ -203,20 +200,20 @@ f(x) = bias + Σ[i=1 to n] A_i * sin(ω_i * (x - φ_i))
 
 ## Training Data Generation
 
-The `training_data_generator` executable creates datasets for machine learning applications:
+The `training_data_generator` executable creates datasets for machine learning applications. It supports both fresh generation and appending to existing datasets through command line arguments.
 
-### Configuration
+### Default Configuration
 
-Edit constants in `training_data_generator.cpp`:
+The following constants in `training_data_generator.cpp` serve as defaults when not overridden by command line arguments:
 
 ```cpp
-const int NUM_SAMPLES = 5;              // Number of samples to generate
+const int DEFAULT_NUM_SAMPLES = 2;      // Number of samples to generate
 const std::string TRAINING_DIR = "../training_data";
 
 // Solver parameters
 const double KINEMATIC_VISCOSITY = 0.01;
-const int TIME_STEPS = 1000;
-const double TIME_STEP_SIZE = 0.005;
+const int DEFAULT_TIME_STEPS = 100000;
+const double DEFAULT_TIME_STEP_SIZE = 0.000001;
 
 // Random IC ranges
 const int N_MIN = 1;                    // Min number of terms
@@ -228,12 +225,49 @@ const double AMP_MAX = 10.0;            // Max amplitude
 // ... (see source for complete list)
 ```
 
+### Command Line Arguments
+
+The generator supports the following command line arguments to override defaults:
+
+| Argument | Short | Description | Default |
+|----------|-------|-------------|---------|
+| `--samples <num>` | `-s` | Number of training samples to generate | 2 |
+| `--append` | `-a` | Append to existing samples (flag, no value) | false |
+| `--time-step <value>` | `-ts` | Time step size | 0.000001 |
+| `--num-time-steps <num>` | `-nts` | Number of time steps | 100000 |
+
+**Behavior:**
+- **Without `--append`**: Deletes all existing `sample_*` folders and starts numbering from `sample_000000`
+- **With `--append`**: Finds the highest existing sample number and continues from the next number (e.g., if `sample_000007` exists, new samples start at `sample_000008`)
+
 ### Running the Generator
 
 ```bash
 cd build
+
+# Generate 10 samples with default settings (fresh start)
+./training_data_generator --samples 10
+
+# Generate 5 more samples, appending to existing dataset
+./training_data_generator --samples 5 --append
+
+# Custom time configuration
+./training_data_generator -s 20 -ts 0.00001 -nts 50000
+
+# Append with custom time settings
+./training_data_generator -s 3 -a -ts 0.000001 -nts 100000
+
+# Run with defaults (2 samples, fresh start)
 ./training_data_generator
 ```
+
+**Error Handling:**
+The generator validates all command line arguments and will exit with an error message if:
+- An unknown argument is provided
+- A required value is missing (e.g., `--samples` without a number)
+- An invalid value is provided (e.g., `--samples abc`)
+
+### Output Structure
 
 This creates:
 ```
@@ -242,16 +276,46 @@ training_data/
 │   ├── timestep_00000.csv
 │   ├── timestep_00001.csv
 │   ├── ...
-│   └── metadata.json          # IC parameters for reproducibility
+│   └── metadata.json          # IC parameters and solver config
 ├── sample_000001/
 │   └── ...
 └── ...
 ```
 
 Each `metadata.json` contains:
-- Configuration parameters (n, domain_length, amplitude ranges, etc.)
-- Exact terms (amplitude, frequency, phase_shift for each sinusoid)
-- Bias value
+- **Configuration parameters**: n, domain_length, amplitude ranges, frequency ranges, etc.
+- **Exact terms**: amplitude, frequency, phase_shift for each sinusoid
+- **Bias value**: vertical shift (if alwaysPositive mode used)
+- **Solver parameters**: time_steps, time_step_size, num_domain_points, spatial_step_size, stencil_name
+
+Example metadata structure:
+```json
+{
+  "config": {
+    "n": 5,
+    "domain_length": 10.0,
+    "amp_min": -1.0,
+    "amp_max": 1.0,
+    ...
+  },
+  "terms": [
+    {
+      "amplitude": 0.8,
+      "frequency": 1.5,
+      "phase_shift": 2.3
+    },
+    ...
+  ],
+  "bias": 0.0,
+  "solver": {
+    "time_steps": 100000,
+    "time_step_size": 0.000001,
+    "num_domain_points": 1000,
+    "spatial_step_size": 0.01,
+    "stencil_name": "LaxWendroff"
+  }
+}
+```
 
 ## How the Solver Works
 
@@ -397,7 +461,14 @@ x,u
     },
     ...
   ],
-  "bias": 0.0
+  "bias": 0.0,
+  "solver": {
+    "time_steps": 100000,
+    "time_step_size": 0.000001,
+    "num_domain_points": 1000,
+    "spatial_step_size": 0.01,
+    "stencil_name": "LaxWendroff"
+  }
 }
 ```
 
