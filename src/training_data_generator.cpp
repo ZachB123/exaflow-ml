@@ -6,12 +6,13 @@
 #include <sstream>
 #include <string>
 #include <cstdlib>
+#include <chrono>
 
 #include "initial_condition_generator.h"
 #include "burgers.h"
 
 // how many training samples to generate
-const int DEFAULT_NUM_SAMPLES = 2;
+const int DEFAULT_NUM_SAMPLES = 5;
 const std::string TRAINING_DIR = "../training_data";
 
 // what stencil we are using for the configuration
@@ -22,7 +23,7 @@ const auto STENCIL_FACTORY = []() {
 // constant solver configurations
 const double KINEMATIC_VISCOSITY = 0.01;
 const int DEFAULT_TIME_STEPS = 10000;
-const double DEFAULT_TIME_STEP_SIZE = 0.000001;
+const double DEFAULT_TIME_STEP_SIZE = 0.00001;
 
 // n (number of terms)
 const int N_MIN = 1;
@@ -192,10 +193,13 @@ int main(int argc, char* argv[]) {
     std::cout << "Generating " << num_samples << " samples with " 
               << time_steps << " time steps of size " << time_step_size << "\n";
 
+    auto total_start = std::chrono::high_resolution_clock::now();
+
     for (int sample_index = start_sample_index; sample_index < start_sample_index + num_samples; ++sample_index) {
 
-        RandomInitialConditionConfig cfg = generateRandomInitialConditionConfig();
+        auto sample_start = std::chrono::high_resolution_clock::now();
 
+        RandomInitialConditionConfig cfg = generateRandomInitialConditionConfig();
         RandomInitialCondition f(cfg);
 
         SolverConfig solver_cfg;
@@ -223,9 +227,21 @@ int main(int argc, char* argv[]) {
                           solver.getSpatialStepSize(),
                           solver.getStencilName());
 
+        auto sample_end = std::chrono::high_resolution_clock::now();
+        auto sample_duration = std::chrono::duration_cast<std::chrono::milliseconds>(sample_end - sample_start);
+
         std::cout << "Generated sample " << sample_index << " in "
-                  << TRAINING_DIR << "/" << folder_name.str() << "\n";
+                  << TRAINING_DIR << "/" << folder_name.str() 
+                  << " (took " << sample_duration.count() / 1000.0 << "s)\n";
     }
+
+    auto total_end = std::chrono::high_resolution_clock::now();
+    auto total_duration = std::chrono::duration_cast<std::chrono::milliseconds>(total_end - total_start);
+
+    std::cout << "\n===========================================\n";
+    std::cout << "Total execution time: " << total_duration.count() / 1000.0 << "s\n";
+    std::cout << "Average time per sample: " << (total_duration.count() / 1000.0) / num_samples << "s\n";
+    std::cout << "===========================================\n";
 
     return 0;
 }
