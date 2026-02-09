@@ -6,7 +6,7 @@ void FTCS::calculateNextU(const std::vector<double>& u, std::vector<double>& u_n
     for (int i = 1; i < num_domain_points - 1; ++i) {
         u_next[i] = u[i]
             - u[i] * time_step_size / spatial_step_size * (u[i + 1] - u[i - 1])
-            + (kinematic_viscosity + calculateArtificialViscosity(u, cq, spatial_step_size, i)) * time_step_size / (spatial_step_size * spatial_step_size)
+            + (kinematic_viscosity + calculateArtificialViscosity(u, cq, spatial_step_size, i, num_domain_points)) * time_step_size / (spatial_step_size * spatial_step_size)
                 * (u[i + 1] - 2 * u[i] + u[i - 1]);
     }
 
@@ -19,9 +19,9 @@ void FTCS::calculateNextU(const std::vector<double>& u, std::vector<double>& u_n
     u_next[num_domain_points - 1] = u_next[0];
 }
 
-double FTCS::calculateArtificialViscosity(const std::vector<double>& u, double cq, double spatial_step_size, int i) const {
+double FTCS::calculateArtificialViscosity(const std::vector<double>& u, double cq, double spatial_step_size, int i, int num_domain_points) const {
     // linear artificial viscosity model, not quadratic RVN
-    double ux = (u[i + 1] - u[i - 1]) / (2.0 * spatial_step_size);
+    double ux = (i == 0) ? (u[i + 1] - u[num_domain_points - 2]) / (2.0 * spatial_step_size) : (u[i + 1] - u[i - 1]) / (2.0 * spatial_step_size);
     // Only take artificial viscosity when in compression
     double artificial_viscosity = (ux < 0) ? cq * spatial_step_size * spatial_step_size * std::abs(ux) : 0.0;
 
