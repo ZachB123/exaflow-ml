@@ -1,4 +1,4 @@
-# 1D Burgers' Equation Solver
+# 1D Burgers' Equation SolverTEST
 
 A C++ implementation of a 1D Burgers' equation solver using finite difference methods with support for multiple numerical schemes, artificial viscosity, and automated training data generation. This solver can simulate both inviscid and viscous Burgers' equations with customizable or randomly generated initial conditions.
 
