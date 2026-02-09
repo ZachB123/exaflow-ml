@@ -30,13 +30,18 @@ public:
     RandomInitialCondition(
                    const RandomInitialConditionConfig &config,
                    bool alwaysPositive = false,
-                   bool wrapAround = false,
+                   bool wrapAround = true,
                    unsigned seed = std::random_device{}());
 
     double operator()(double x) const;
 
     void saveMetadataJSON(const std::filesystem::path& base_path,
-                      const std::filesystem::path& sample_folder) const;
+                      const std::filesystem::path& sample_folder,
+                      int time_steps,
+                      double time_step_size,
+                      int num_domain_points,
+                      double spatial_step_size,
+                      const std::string& stencil_name) const;
 
 
     std::string toString() const;

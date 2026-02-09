@@ -163,3 +163,15 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
 bool BurgersSolver1d::wasNanDetected() const {
     return nan_detected;
 }
+
+int BurgersSolver1d::getNumDomainPoints() const {
+    return most_recent_num_domain_points;
+}
+
+double BurgersSolver1d::getSpatialStepSize() const {
+    return most_recent_spatial_step_size;
+}
+
+std::string BurgersSolver1d::getStencilName() const {
+    return stencil->getName();
+}

@@ -76,4 +76,10 @@ public:
     void saveSolution(const std::string& base_folder, const std::string& run_name, int gap) const;
 
     bool wasNanDetected() const;
+
+    int getNumDomainPoints() const;
+
+    double getSpatialStepSize() const;
+
+    std::string getStencilName() const;
 };
