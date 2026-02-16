@@ -9,10 +9,10 @@ struct SolverConfig {
     double kinematic_viscosity;
     // how many iterations we will simulate
     int time_steps;
-    // length of time each time step is
-    double time_step_size;
     // how long is the x axis are equation is defined on
     double domain_length;
+    // length of time each time step is
+    double time_step_size;
 };
 
 class BurgersSolver1d {
