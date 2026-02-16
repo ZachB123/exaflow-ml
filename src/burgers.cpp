@@ -63,7 +63,8 @@ void BurgersSolver1d::solve(double cq) {
     
     nan_detected = false;
     double max_u = approximate_max_u();
-    double spatial_step_size = time_step_size * max_u / ALPHA;
+    // cfl condition
+    double spatial_step_size = time_step_size * max_u * ALPHA;
     // This spatial stepsize is bullshit and not actually what we want to use
     // if we use the previous calculation it just blows everything up
     spatial_step_size = 0.01;
