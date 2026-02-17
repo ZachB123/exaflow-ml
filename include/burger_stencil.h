@@ -24,9 +24,14 @@ public:
 
 protected:
     virtual double calculateArtificialViscosity(
-                const std::vector<double>& u, 
-                double cq, double spatial_step_size, 
-                int i, int num_domain_points) const = 0;
+        const std::vector<double>& /*u*/,
+        double /*cq*/,
+        double /*spatial_step_size*/,
+        int /*i*/,
+        int /*num_domain_points*/) const
+    {
+        return 0.0;   // default: no artificial viscosity
+    }
 };
 
 class FTCS : public BurgerStencil {
@@ -47,4 +52,14 @@ public:
 
 protected:
     double calculateArtificialViscosity(const std::vector<double>& u, double cq, double spatial_step_size, int i, int num_domain_points) const override;
+};
+
+class Godunov : public BurgerStencil {
+public:
+    void calculateNextU(const std::vector<double>& u, std::vector<double>& u_next, double /*cq (unused)*/, int N, double dt, double dx, double kinematic_viscosity) override;
+    
+    std::string getName() const override;
+    
+protected:
+    double godunovFlux(double uL, double uR) const;
 };
