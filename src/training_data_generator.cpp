@@ -77,6 +77,14 @@ RandomInitialConditionConfig generateRandomInitialConditionConfig() {
     int w2 = wrap_k_dist(rng);
     cfg.wrap_around_frequency_multiplier_min = std::min(w1, w2);
     cfg.wrap_around_frequency_multiplier_max = std::max(w1, w2);
+    // we need to ensure that the min != max since there are only a finite number of wrap-around frequency multipliers (only 20 k values)
+    // this is not an issue for amplitudes and frequencies since that distribution is continuous
+    if (cfg.wrap_around_frequency_multiplier_min == cfg.wrap_around_frequency_multiplier_max) {
+        // nudge min down but stay above min (1)
+        cfg.wrap_around_frequency_multiplier_min = std::max(cfg.wrap_around_frequency_multiplier_min - 1, WRAP_K_MIN);
+        // nudge max up but stay below max (20)
+        cfg.wrap_around_frequency_multiplier_max = std::min(cfg.wrap_around_frequency_multiplier_max + 1, WRAP_K_MAX);
+    }
 
     return cfg;
 }
