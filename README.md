@@ -93,6 +93,10 @@ Both schemes implement artificial viscosity to stabilize solutions near shocks:
 // Applied only in compression regions (∂u/∂x < 0)
 artificial_viscosity = cq * dx² * |∂u/∂x|
 ```
+#### 3. Godunov
+- Riemann solving for flux model
+- Accurate; doesn't need artificial viscosity
+- WAY more computationally expensive than FTCS, especially when you get to more complex equations.
 
 ## How to Use
 

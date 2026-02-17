@@ -28,8 +28,8 @@ int main() {
     };
 
     BurgersSolver1d step_function_solver(
-        std::make_unique<LaxWendroff>(),
-        step_function_config, 
+        std::make_unique<Godunov>(),
+        step_function_config,
         step_function);
 
     step_function_solver.solve();
@@ -49,8 +49,8 @@ int main() {
     };
 
     BurgersSolver1d solver(
-        std::make_unique<LaxWendroff>(), 
-        sine_wave_config, 
+        std::make_unique<Godunov>(),
+        sine_wave_config,
         sine_function);
 
     solver.solve();
@@ -70,8 +70,8 @@ int main() {
     };
 
     BurgersSolver1d random_function_solver(
-        std::make_unique<LaxWendroff>(),
-        random_function_config, 
+        std::make_unique<Godunov>(),
+        random_function_config,
         f);
 
     random_function_solver.solve();
