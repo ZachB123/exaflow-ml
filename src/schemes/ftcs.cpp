@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "burger_stencil.h"
+#include "burger_scheme.h"
 
 void FTCS::calculateNextU(const std::vector<double>& u, std::vector<double>& u_next, double cq, int num_domain_points, double time_step_size, double spatial_step_size, double kinematic_viscosity) {
     for (int i = 1; i < num_domain_points - 1; ++i) {

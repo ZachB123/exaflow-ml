@@ -1,4 +1,4 @@
-#include "burger_stencil.h"
+#include "burger_scheme.h"
 
 void LaxWendroff::calculateNextU(const std::vector<double>& u, std::vector<double>& u_next, double cq, int num_domain_points, double time_step_size, double spatial_step_size, double kinematic_viscosity) {
     double dt = time_step_size;

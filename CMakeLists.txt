@@ -17,8 +17,8 @@ add_compile_definitions(_USE_MATH_DEFINES)
 set(SHARED_SOURCES
     src/burgers.cpp
     src/initial_condition_generator.cpp
-    src/stencils/ftcs.cpp
-    src/stencils/lax_wendroff.cpp
+    src/schemes/ftcs.cpp
+    src/schemes/lax_wendroff.cpp
 )
 
 # regular experimental solver

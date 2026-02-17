@@ -2,7 +2,7 @@
 #include <functional>
 #include <vector>
 
-#include "burger_stencil.h"
+#include "burger_scheme.h"
 
 struct SolverConfig {
     // viscosity coefficient for viscous burgers
@@ -21,8 +21,8 @@ private:
     // used for calculating spatial step size and number of domain points
     inline static const double ALPHA = 0.9;
 
-    // stencil for solving
-    std::unique_ptr<BurgerStencil> stencil;
+    // scheme for solving
+    std::unique_ptr<BurgerScheme> scheme;
 
     // kinematic viscosity as shown in the burgers equation
     const double kinematic_viscosity;
@@ -59,11 +59,11 @@ private:
 public:
     
     BurgersSolver1d(
-        const std::unique_ptr<BurgerStencil> stencil, 
+        const std::unique_ptr<BurgerScheme> scheme, 
         const SolverConfig& config);
 
     BurgersSolver1d(
-        const std::unique_ptr<BurgerStencil> stencil, 
+        const std::unique_ptr<BurgerScheme> scheme, 
         const SolverConfig& config, 
         const std::function<double(double)>& initialize_conditions);
 
@@ -81,5 +81,5 @@ public:
 
     double getSpatialStepSize() const;
 
-    std::string getStencilName() const;
+    std::string getSchemeName() const;
 };
