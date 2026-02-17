@@ -54,7 +54,7 @@ protected:
     double calculateArtificialViscosity(const std::vector<double>& u, double cq, double spatial_step_size, int i, int num_domain_points) const override;
 };
 
-class Godunov : public BurgerStencil {
+class Godunov : public BurgerScheme {
 public:
     void calculateNextU(const std::vector<double>& u, std::vector<double>& u_next, double /*cq (unused)*/, int n, double dt, double dx, double kinematic_viscosity) override;
     
