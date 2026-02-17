@@ -41,7 +41,7 @@ public:
                       double time_step_size,
                       int num_domain_points,
                       double spatial_step_size,
-                      const std::string& stencil_name) const;
+                      const std::string& scheme_name) const;
 
 
     std::string toString() const;

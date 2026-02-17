@@ -1,4 +1,4 @@
-#include "burger_stencil.h"
+#include "burger_scheme.h"
 #include <vector>
 
 /*

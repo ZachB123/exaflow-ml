@@ -16,14 +16,14 @@ This makes it useful for understanding shock waves, traffic flow, and basic flui
 .
 ├── include/
 │   ├── burgers.h                      # BurgersSolver1d class definition
-│   ├── burger_stencil.h               # Abstract stencil interface and implementations
+│   ├── burger_scheme.h               # Abstract scheme interface and implementations
 │   └── initial_condition_generator.h  # Random initial condition generator
 ├── src/
 │   ├── main.cpp                       # Example simulations
 │   ├── burgers.cpp                    # Solver implementation
 │   ├── training_data_generator.cpp    # Automated training data generation
 │   ├── initial_condition_generator.cpp # Random IC implementation
-│   └── stencils/
+│   └── schemes/
 │       ├── ftcs.cpp                   # Forward-Time Central-Space scheme
 │       └── lax_wendroff.cpp          # Lax-Wendroff scheme
 ├── visualizer/
@@ -72,9 +72,9 @@ The programs will generate output in `../data` and `../training_data` directorie
 
 ## Numerical Schemes
 
-The solver supports multiple finite difference schemes through a polymorphic stencil architecture:
+The solver supports multiple finite difference schemes through a polymorphic scheme architecture:
 
-### Available Stencils
+### Available Schemes
 
 #### 1. FTCS (Forward-Time Central-Space)
 - Simple explicit scheme
@@ -146,7 +146,7 @@ std::function<double(double)> sine_function = [](double x) -> double {
 #### 3. Create and Run the Solver
 
 ```cpp
-// Create solver with chosen stencil
+// Create solver with chosen scheme
 BurgersSolver1d solver(
     std::make_unique<LaxWendroff>(),  // or std::make_unique<FTCS>()
     config,
@@ -290,7 +290,7 @@ Each `metadata.json` contains:
 - **Configuration parameters**: n, domain_length, amplitude ranges, frequency ranges, etc.
 - **Exact terms**: amplitude, frequency, phase_shift for each sinusoid
 - **Bias value**: vertical shift (if alwaysPositive mode used)
-- **Solver parameters**: time_steps, time_step_size, num_domain_points, spatial_step_size, stencil_name
+- **Solver parameters**: time_steps, time_step_size, num_domain_points, spatial_step_size, scheme_name
 
 Example metadata structure:
 ```json
@@ -316,7 +316,7 @@ Example metadata structure:
     "time_step_size": 0.000001,
     "num_domain_points": 1000,
     "spatial_step_size": 0.01,
-    "stencil_name": "LaxWendroff"
+    "scheme_name": "LaxWendroff"
   }
 }
 ```
@@ -471,7 +471,7 @@ x,u
     "time_step_size": 0.000001,
     "num_domain_points": 1000,
     "spatial_step_size": 0.01,
-    "stencil_name": "LaxWendroff"
+    "scheme_name": "LaxWendroff"
   }
 }
 ```
@@ -543,16 +543,16 @@ The solver automatically computes `Δx` based on:
 
 ## Extending the Solver
 
-### Adding New Stencils
+### Adding New schemes
 
-1. Create a new class inheriting from `BurgerStencil` in `burger_stencil.h`
+1. Create a new class inheriting from `Burgerscheme` in `burger_scheme.h`
 2. Implement `calculateNextU()` and `calculateArtificialViscosity()`
-3. Add implementation file in `src/stencils/`
+3. Add implementation file in `src/schemes/`
 4. Update `CMakeLists.txt` to include new source file
 
 Example:
 ```cpp
-class MyStencil : public BurgerStencil {
+class Myscheme : public Burgerscheme {
 public:
     void calculateNextU(...) override;
 protected:

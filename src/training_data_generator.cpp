@@ -15,8 +15,8 @@
 const int DEFAULT_NUM_SAMPLES = 5;
 const std::string TRAINING_DIR = "../training_data";
 
-// what stencil we are using for the configuration
-const auto STENCIL_FACTORY = []() {
+// what scheme we are using for the configuration
+const auto SCHEME_FACTORY = []() {
     return std::make_unique<LaxWendroff>();
 };
 
@@ -209,7 +209,7 @@ int main(int argc, char* argv[]) {
         solver_cfg.time_step_size = time_step_size;
 
         BurgersSolver1d solver(
-            STENCIL_FACTORY(),
+            SCHEME_FACTORY(),
             solver_cfg,
             f
         );
@@ -225,7 +225,7 @@ int main(int argc, char* argv[]) {
                           time_steps, time_step_size,
                           solver.getNumDomainPoints(),
                           solver.getSpatialStepSize(),
-                          solver.getStencilName());
+                          solver.getSchemeName());
 
         auto sample_end = std::chrono::high_resolution_clock::now();
         auto sample_duration = std::chrono::duration_cast<std::chrono::milliseconds>(sample_end - sample_start);

@@ -9,9 +9,9 @@
 #include "burgers.h"
 
 
-BurgersSolver1d::BurgersSolver1d(std::unique_ptr<BurgerStencil> stencil, const SolverConfig& config)
+BurgersSolver1d::BurgersSolver1d(std::unique_ptr<BurgerScheme> scheme, const SolverConfig& config)
     :   
-        stencil(std::move(stencil)),
+        scheme(std::move(scheme)),
         kinematic_viscosity(config.kinematic_viscosity),
         time_steps(config.time_steps),
         domain_length(config.domain_length),
@@ -21,12 +21,12 @@ BurgersSolver1d::BurgersSolver1d(std::unique_ptr<BurgerStencil> stencil, const S
 {}
 
 BurgersSolver1d::BurgersSolver1d(
-    std::unique_ptr<BurgerStencil> stencil,
+    std::unique_ptr<BurgerScheme> scheme,
     const SolverConfig& config,
     const std::function<double(double)>& initial_conditions
 )
     :   
-        stencil(std::move(stencil)),
+        scheme(std::move(scheme)),
         kinematic_viscosity(config.kinematic_viscosity),
         time_steps(config.time_steps),
         domain_length(config.domain_length),
@@ -88,7 +88,7 @@ void BurgersSolver1d::solve(double cq) {
     solution_history.push_back(u);
 
     for (int time_step = 0; time_step < time_steps; ++time_step) {
-        stencil->calculateNextU(
+        scheme->calculateNextU(
             u, 
             u_next, 
             cq, 
@@ -174,6 +174,6 @@ double BurgersSolver1d::getSpatialStepSize() const {
     return most_recent_spatial_step_size;
 }
 
-std::string BurgersSolver1d::getStencilName() const {
-    return stencil->getName();
+std::string BurgersSolver1d::getSchemeName() const {
+    return scheme->getName();
 }

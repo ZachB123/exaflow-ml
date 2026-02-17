@@ -67,7 +67,7 @@ void RandomInitialCondition::saveMetadataJSON(const std::filesystem::path& base_
                                               double time_step_size,
                                               int num_domain_points,
                                               double spatial_step_size,
-                                              const std::string& stencil_name) const
+                                              const std::string& scheme_name) const
 {
     std::filesystem::path folder = base_path / sample_folder;
 
@@ -117,7 +117,7 @@ void RandomInitialCondition::saveMetadataJSON(const std::filesystem::path& base_
     file << "    \"time_step_size\": " << time_step_size << ",\n";
     file << "    \"num_domain_points\": " << num_domain_points << ",\n";
     file << "    \"spatial_step_size\": " << spatial_step_size << ",\n";
-    file << "    \"stencil_name\": \"" << stencil_name << "\"\n";
+    file << "    \"scheme_name\": \"" << scheme_name << "\"\n";
     file << "  }\n";
     file << "}\n";
 }

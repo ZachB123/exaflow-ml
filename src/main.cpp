@@ -5,7 +5,7 @@
 #include <functional>
 
 #include "burgers.h"
-#include "burger_stencil.h"
+#include "burger_scheme.h"
 #include "initial_condition_generator.h"
 
 int main() {
