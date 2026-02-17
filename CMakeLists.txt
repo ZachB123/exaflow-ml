@@ -19,6 +19,7 @@ set(SHARED_SOURCES
     src/initial_condition_generator.cpp
     src/stencils/ftcs.cpp
     src/stencils/lax_wendroff.cpp
+    src/stencils/Godunov.cpp
 )
 
 # regular experimental solver
