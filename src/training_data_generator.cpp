@@ -44,6 +44,8 @@ const double FREQ_MAX = 20.0;
 // wrap-around frequency multiplier
 const int WRAP_K_MIN = 1;
 const int WRAP_K_MAX = 20;
+const int WRAP_K_DELTA_MIN = 1;
+const int WRAP_K_DELTA_MAX = 10;
 
 RandomInitialConditionConfig generateRandomInitialConditionConfig() {
     static std::random_device rd;
@@ -73,18 +75,17 @@ RandomInitialConditionConfig generateRandomInitialConditionConfig() {
     cfg.frequency_multiplier_max = std::max(f1, f2);
 
     // Wrap-around frequency multiplier
-    int w1 = wrap_k_dist(rng);
-    int w2 = wrap_k_dist(rng);
-    cfg.wrap_around_frequency_multiplier_min = std::min(w1, w2);
-    cfg.wrap_around_frequency_multiplier_max = std::max(w1, w2);
-    // we need to ensure that the min != max since there are only a finite number of wrap-around frequency multipliers (only 20 k values)
-    // this is not an issue for amplitudes and frequencies since that distribution is continuous
-    if (cfg.wrap_around_frequency_multiplier_min == cfg.wrap_around_frequency_multiplier_max) {
-        // nudge min down but stay above min (1)
-        cfg.wrap_around_frequency_multiplier_min = std::max(cfg.wrap_around_frequency_multiplier_min - 1, WRAP_K_MIN);
-        // nudge max up but stay below max (20)
-        cfg.wrap_around_frequency_multiplier_max = std::min(cfg.wrap_around_frequency_multiplier_max + 1, WRAP_K_MAX);
+    const int wrap_delta_max = std::min(WRAP_K_DELTA_MAX, WRAP_K_MAX - WRAP_K_MIN);
+    std::uniform_int_distribution<int> wrap_delta_dist(WRAP_K_DELTA_MIN, wrap_delta_max);
+    // Sample a min frequency and a delta to ensure min != max
+    int wrap_min = wrap_k_dist(rng);
+    int wrap_delta = wrap_delta_dist(rng);
+    // Clamp if min + delta would exceed the max boundary
+    if (wrap_min + wrap_delta > WRAP_K_MAX) {
+        wrap_min = WRAP_K_MAX - wrap_delta;
     }
+    cfg.wrap_around_frequency_multiplier_min = wrap_min;
+    cfg.wrap_around_frequency_multiplier_max = wrap_min + wrap_delta;
 
     return cfg;
 }
