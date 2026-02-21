@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "burger_scheme.h"
+#include <memory>
 
 struct SolverConfig {
     // viscosity coefficient for viscous burgers

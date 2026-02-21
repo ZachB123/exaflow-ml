@@ -6,34 +6,61 @@ import pandas as pd
 from constants import *
 
 class BurgersSolution:
-    
+
+    def calculateArtificialViscosity(self, u):
+        """
+        Compute artificial viscosity for a given timestep array `u`.
+        Returns an array of same length as `u` with viscosity values.
+        Replace the logic with your actual AV computation.
+        """
+        av = np.zeros_like(u)
+
+        # Example: simple gradient-based artificial viscosity
+        for i in range(1, len(u)-1):
+            if abs(u[i+1] - u[i-1]) > 0.1:  # threshold for steep gradient
+                av[i] = 0.01 * abs(u[i+1] - u[i-1])
+        return av
+
     def __init__(self, sample_name, training_data_dir=DEFAULT_TRAINING_DATA_DIR):
-            
+
+        # Store sample info and folder paths
         self.sample_name = sample_name
         self.sample_dir = os.path.join(training_data_dir, sample_name)
-        
+
         if not os.path.exists(self.sample_dir):
             raise ValueError(f"Sample directory does not exist: {self.sample_dir}")
-        
+
+        # Load metadata.json
         metadata_path = os.path.join(self.sample_dir, METADATA_FILENAME)
         if not os.path.exists(metadata_path):
             raise ValueError(f"Metadata file not found: {metadata_path}")
-        
+
         with open(metadata_path, 'r') as f:
             self.metadata = json.load(f)
-        
+
+        # Extract config and solver info
         self.config = self.metadata[CONFIG_KEY]
         self.solver = self.metadata[SOLVER_KEY]
-        
-        self.domain_length = self.config[DOMAIN_LENGTH_KEY]
-        self.spatial_step_size = self.solver[SPATIAL_STEP_SIZE_KEY]
-        self.num_domain_points = self.solver[NUM_DOMAIN_POINTS_KEY]
-        
-        self.time_steps = self.solver[TIME_STEPS_KEY]
-        self.time_step_size = self.solver[TIME_STEP_SIZE_KEY]
-        self.max_time = self.time_steps * self.time_step_size
-        
-        self._cache = {}
+
+        # Basic simulation parameters
+        self.domain_length = (self.config["nx"] - 1) * self.config["dx"]
+        self.spatial_step_size = self.config["dx"]
+        self.num_domain_points = self.config["nx"]  # assume nx = number of points
+        self.time_steps = self.config["nt"]
+        self.time_step_size = self.config["dt"]
+        self.max_time = (self.config["nt"] - 1) * self.config["dt"]
+
+        # Initialize solution history: load CSVs if they exist, otherwise zeros
+        self.solution_history = [np.zeros(self.config["nx"]) for _ in range(self.config["nt"])]
+	# Add a non-zero value in the middle of the first timestep
+        self.solution_history[0][self.config["nx"]//2] = 1.0
+        for t in range(self.time_steps):
+            step_file = os.path.join(self.sample_dir, f"step_{t:05d}.csv")
+            if os.path.exists(step_file):
+                u = pd.read_csv(step_file, header=None).to_numpy().flatten()
+                self.solution_history.append(u)
+            else:
+                self.solution_history.append(np.zeros(self.num_domain_points))
 
         
     def _get_time_step(self, time_step_index):
