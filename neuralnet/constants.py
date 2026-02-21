@@ -1,4 +1,4 @@
-DEFAULT_TRAINING_DATA_DIR = "../training_data"
+DEFAULT_TRAINING_DATA_DIR = "training_data"
 METADATA_FILENAME = "metadata.json"
 CSV_FILENAME_FORMAT = "timestep_{:05d}.csv"
 

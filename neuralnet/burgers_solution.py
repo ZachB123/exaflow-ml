@@ -35,6 +35,23 @@ class BurgersSolution:
         
         self._cache = {}
 
+        #variables needed for u0
+        self.bias = float(self.metadata.get("bias", 0.0))
+        self.terms = self.metadata.get("terms", [])
+        if not isinstance(self.terms, list) or len(self.terms) == 0:
+            raise ValueError("metadata.json must contain a non-empty 'terms' list to reconstruct u0(x).")
+        
+        self._A = np.array([t["amplitude"] for t in self.terms], dtype=float)
+        self._w = np.array([t["frequency"] for t in self.terms], dtype=float)
+        self._xshift = np.array([t["phase_shift"] for t in self.terms], dtype=float)
+
+    #initial condition function
+    def u0(self, x: float) -> float:
+        if x < 0 or x > self.domain_length:
+            raise ValueError(f"x={x} is out of domain bounds [0, {self.domain_length}]")
+
+        # u0(x) = bias + sum A_k sin(w_k x + phi_k)
+        return float(self.bias + np.sum(self._A * np.sin(self._w * (x - self._xshift))))
         
     def _get_time_step(self, time_step_index):
         if time_step_index in self._cache:
