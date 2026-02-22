@@ -7,11 +7,11 @@ if __name__ == "__main__":
     # print(solution.get_u(10, 0.02 + (1e-5 / 2)))
 
     # print(solution.get_u(10, 0))
-    # print(solution.u0(10))
+    # print(solution.initial_condition(10))
 
     #testing u0() vs. csv data for timestep_00000
     x_csv, u_csv = solution.get_time_step_data(0)
-    u_reconstructed = np.array([solution.u0(x) for x in x_csv])
+    u_reconstructed = np.array([solution.initial_condition(x) for x in x_csv])
 
     max_abs_error = np.max(np.abs(u_reconstructed - u_csv))
     mean_abs_error = np.mean(np.abs(u_reconstructed - u_csv))

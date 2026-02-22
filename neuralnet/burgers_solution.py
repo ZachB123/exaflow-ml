@@ -35,23 +35,32 @@ class BurgersSolution:
         
         self._cache = {}
 
-        #variables needed for u0
-        self.bias = float(self.metadata.get("bias", 0.0))
-        self.terms = self.metadata.get("terms", [])
-        if not isinstance(self.terms, list) or len(self.terms) == 0:
-            raise ValueError("metadata.json must contain a non-empty 'terms' list to reconstruct u0(x).")
-        
-        self._A = np.array([t["amplitude"] for t in self.terms], dtype=float)
-        self._w = np.array([t["frequency"] for t in self.terms], dtype=float)
-        self._xshift = np.array([t["phase_shift"] for t in self.terms], dtype=float)
+        # error out if bias or terms do not exist
+        try:
+            bias = float(self.metadata[BIAS_KEY])
+            terms = self.metadata[TERMS_KEY]
+        except KeyError as e:
+            raise ValueError(f"Missing required metadata field: {e.args[0]}")
+
+        if not isinstance(terms, list) or len(terms) == 0:
+            raise ValueError(f"'{TERMS_KEY}' must be a non-empty list to reconstruct u0(x).")
+
+        # variables needed for u0 stored in dict
+        self.u0_params = {
+            "bias": bias,
+            "terms": terms,
+            "A": np.array([t[AMPLITUDE_KEY] for t in terms], dtype=float),
+            "w": np.array([t[FREQUENCY_KEY] for t in terms], dtype=float),
+            "xshift": np.array([t[PHASE_SHIFT_KEY] for t in terms], dtype=float),
+        }
 
     #initial condition function
-    def u0(self, x: float) -> float:
+    def initial_condition(self, x: float) -> float:
         if x < 0 or x > self.domain_length:
             raise ValueError(f"x={x} is out of domain bounds [0, {self.domain_length}]")
-
-        # u0(x) = bias + sum A_k sin(w_k x + phi_k)
-        return float(self.bias + np.sum(self._A * np.sin(self._w * (x - self._xshift))))
+        p = self.u0_params
+        # u0(x) = bias + sum A_k sin(w_k (x - xshift_k))
+        return float(p["bias"] + np.sum(p["A"] * np.sin(p["w"] * (x - p["xshift"]))))
         
     def _get_time_step(self, time_step_index):
         if time_step_index in self._cache:
