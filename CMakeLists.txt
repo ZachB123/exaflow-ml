@@ -11,7 +11,12 @@ add_compile_definitions(_USE_MATH_DEFINES)
 # Include directories
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-add_compile_options(-Wall -Wextra -Wpedantic)
+if (MSVC)
+    add_compile_options(/W4)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
 add_compile_definitions(_USE_MATH_DEFINES)
 
 set(SHARED_SOURCES

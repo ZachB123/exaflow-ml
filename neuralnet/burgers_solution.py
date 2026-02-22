@@ -62,6 +62,31 @@ class BurgersSolution:
             else:
                 self.solution_history.append(np.zeros(self.num_domain_points))
 
+        # error out if bias or terms do not exist
+        try:
+            bias = float(self.metadata[BIAS_KEY])
+            terms = self.metadata[TERMS_KEY]
+        except KeyError as e:
+            raise ValueError(f"Missing required metadata field: {e.args[0]}")
+
+        if not isinstance(terms, list) or len(terms) == 0:
+            raise ValueError(f"'{TERMS_KEY}' must be a non-empty list to reconstruct u0(x).")
+
+        # variables needed for initial condition stored in dict
+        self.initial_conditions_params = {
+            BIAS_KEY: bias,
+            TERMS_KEY: terms,
+            AMPLITUDE_KEY: np.array([t[AMPLITUDE_KEY] for t in terms], dtype=float),
+            FREQUENCY_KEY: np.array([t[FREQUENCY_KEY] for t in terms], dtype=float),
+            PHASE_SHIFT_KEY: np.array([t[PHASE_SHIFT_KEY] for t in terms], dtype=float),
+        }
+
+    def initial_condition(self, x):
+        if x < 0 or x > self.domain_length:
+            raise ValueError(f"x={x} is out of domain bounds [0, {self.domain_length}]")
+        params = self.initial_conditions_params
+        # f(x) = bias + sum A_k sin(w_k (x - xshift_k))
+        return float(params[BIAS_KEY] + np.sum(params[AMPLITUDE_KEY] * np.sin(params[FREQUENCY_KEY] * (x - params[PHASE_SHIFT_KEY]))))
         
     def _get_time_step(self, time_step_index):
         if time_step_index in self._cache:
