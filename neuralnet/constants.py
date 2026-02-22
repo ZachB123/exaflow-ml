@@ -1,4 +1,10 @@
-DEFAULT_TRAINING_DATA_DIR = "../training_data"
+from pathlib import Path
+
+# make path relative to constants.py
+FILE_DIR = Path(__file__).resolve().parent
+REPO_ROOT = FILE_DIR.parent
+DEFAULT_TRAINING_DATA_DIR = REPO_ROOT / "training_data"
+
 METADATA_FILENAME = "metadata.json"
 CSV_FILENAME_FORMAT = "timestep_{:05d}.csv"
 
@@ -14,3 +20,9 @@ TIME_STEP_SIZE_KEY = "time_step_size"
 
 X_COLUMN = "x"
 U_COLUMN = "u"
+
+BIAS_KEY = "bias"
+TERMS_KEY = "terms"
+AMPLITUDE_KEY = "amplitude"
+FREQUENCY_KEY = "frequency"
+PHASE_SHIFT_KEY = "phase_shift"
