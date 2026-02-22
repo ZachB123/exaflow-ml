@@ -16,7 +16,7 @@ if __name__ == "__main__":
     max_abs_error = np.max(np.abs(u_reconstructed - u_csv))
     mean_abs_error = np.mean(np.abs(u_reconstructed - u_csv))
 
-    for i in range(10):
+    for i in range(100):
         print(f"x={x_csv[i]:.2f}  u0={u_reconstructed[i]:.5f}  timestep_00000={u_csv[i]:.5f}")
     
     print("Max abs error:", max_abs_error)

@@ -1,8 +1,8 @@
 from pathlib import Path
 
 # make path relative to constants.py
-NEURALNET_DIR = Path(__file__).resolve().parent
-REPO_ROOT = NEURALNET_DIR.parent
+FILE_DIR = Path(__file__).resolve().parent
+REPO_ROOT = FILE_DIR.parent
 DEFAULT_TRAINING_DATA_DIR = REPO_ROOT / "training_data"
 
 METADATA_FILENAME = "metadata.json"
