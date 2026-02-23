@@ -20,16 +20,16 @@ def load_first_timestep(folder_name):
     u = df['u'].values
     return x, u
 
-def plot_test_cases():
+def plot_test_cases(scheme):
     viscosities = ["1.0", "0.1", "0.01"]
     colors = {"1.0": "black", "0.1": "red", "0.01": "blue"}
     
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 10))
-    fig.canvas.manager.set_window_title("Wikipedia Burgers' Equation Initial Conditions")
+    fig.canvas.manager.set_window_title(f"Wikipedia Burgers' Equation Initial Conditions - {scheme}")
 
     # Plot Gaussian
     for v in viscosities:
-        folder = f"wiki_gaussian_{v}"
+        folder = f"wiki_gaussian_{v}_{scheme}"
         x, u = load_first_timestep(folder)
         if x is not None and u is not None:
             ax1.plot(x, u, label=f"v = {v}", color=colors[v])
@@ -44,7 +44,7 @@ def plot_test_cases():
 
     # Plot N-wave
     for v in viscosities:
-        folder = f"wiki_n_wave_{v}"
+        folder = f"wiki_n_wave_{v}_{scheme}"
         x, u = load_first_timestep(folder)
         if x is not None and u is not None:
             ax2.plot(x, u, label=f"v = {v}", color=colors[v])
@@ -58,8 +58,18 @@ def plot_test_cases():
     ax2.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(SCRIPT_DIR, "wikipedia_comparison.png"))
-    print("Saved to wikipedia_comparison.png")
+    plt.savefig(os.path.join(SCRIPT_DIR, f"wikipedia_comparison_{scheme}.png"))
+    print(f"Saved to wikipedia_comparison_{scheme}.png")
 
 if __name__ == "__main__":
-    plot_test_cases()
+    import argparse
+    parser = argparse.ArgumentParser(description="Plot Wikipedia Burgers' equation data")
+    parser.add_argument(
+        "--scheme",
+        type=str,
+        default="LaxWendroff",
+        choices=["LaxWendroff", "Godunov"],
+        help="Numerical scheme used for the simulation",
+    )
+    args = parser.parse_args()
+    plot_test_cases(args.scheme)

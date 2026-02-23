@@ -34,9 +34,21 @@ def load_frames(data_dir):
 
 
 def run_visualizer(folder_name, initial_speed):
-    # data_dir = os.path.join(PROJECT_ROOT, "training_data", folder_name)
-    # data_dir = os.path.join(PROJECT_ROOT, "data", folder_name)
-    data_dir = os.path.join(PROJECT_ROOT, folder_name)
+    # Support both literal paths and folder names
+    if os.path.exists(folder_name):
+        data_dir = folder_name
+    elif os.path.exists(os.path.join(PROJECT_ROOT, folder_name)):
+        data_dir = os.path.join(PROJECT_ROOT, folder_name)
+    elif os.path.exists(os.path.join(PROJECT_ROOT, "data", folder_name)):
+        data_dir = os.path.join(PROJECT_ROOT, "data", folder_name)
+    elif os.path.exists(os.path.join(PROJECT_ROOT, "data_v2", folder_name)):
+        data_dir = os.path.join(PROJECT_ROOT, "data_v2", folder_name)
+    else:
+        raise ValueError(f"Could not locate simulation data for '{folder_name}'")
+    
+    # Ensure the final resolved path is absolute so glob.glob works universally
+    data_dir = os.path.abspath(data_dir)
+
     x, frames, files = load_frames(data_dir)
 
     fig, ax = plt.subplots()

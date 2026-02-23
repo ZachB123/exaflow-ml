@@ -35,7 +35,7 @@ def load_frames(data_dir):
 
     return x, frames, files
 
-def run_visualizer(case, initial_speed):
+def run_visualizer(case, initial_speed, scheme):
     viscosities = ["1.0", "0.1", "0.01"]
     colors = {"1.0": "black", "0.1": "red", "0.01": "blue"}
     labels = {"1.0": "v=1.0", "0.1": "v=0.1", "0.01": "v=0.01"}
@@ -44,7 +44,7 @@ def run_visualizer(case, initial_speed):
     data = {}
     max_frames = 0
     for v in viscosities:
-        folder_name = f"wiki_{case}_{v}"
+        folder_name = f"wiki_{case}_{v}_{scheme}"
         data_dir = os.path.join(PROJECT_ROOT, "data_v2", folder_name)
         x, frames, files = load_frames(data_dir)
         data[v] = {"x": x, "frames": frames, "files": files}
@@ -176,9 +176,16 @@ def main():
         default=1.0,
         help="Initial playback speed (frames per tick)",
     )
+    parser.add_argument(
+        "--scheme",
+        type=str,
+        default="LaxWendroff",
+        choices=["LaxWendroff", "Godunov"],
+        help="Numerical scheme used for the simulation",
+    )
 
     args = parser.parse_args()
-    run_visualizer(args.case, args.speed)
+    run_visualizer(args.case, args.speed, args.scheme)
 
 if __name__ == "__main__":
     main()
