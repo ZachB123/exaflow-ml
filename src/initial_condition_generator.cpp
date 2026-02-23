@@ -25,7 +25,6 @@ RandomInitialCondition::RandomInitialCondition(const RandomInitialConditionConfi
     double vertical_shift = 0.0;
 
     for (int i = 0; i < config.n; i++) {
-
         double current_amplitude = amplitude_distribution(rng);
         double current_phase_shift = phase_shift_distribution(rng);
         double current_frequency;
