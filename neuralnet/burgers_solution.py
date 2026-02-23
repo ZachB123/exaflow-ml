@@ -2,21 +2,19 @@ import json
 import os
 import numpy as np
 import pandas as pd
-from .constants import *
+from constants import *
 
 
 class BurgersSolution:
 
     def __init__(self, sample_name, training_data_dir=DEFAULT_TRAINING_DATA_DIR):
 
-        # Store sample info and folder paths
         self.sample_name = sample_name
         self.sample_dir = os.path.join(training_data_dir, sample_name)
 
         if not os.path.exists(self.sample_dir):
             raise ValueError(f"Sample directory does not exist: {self.sample_dir}")
 
-        # Load metadata.json
         metadata_path = os.path.join(self.sample_dir, METADATA_FILENAME)
 
         if not os.path.exists(metadata_path):
@@ -25,14 +23,10 @@ class BurgersSolution:
         with open(metadata_path, 'r') as f:
             self.metadata = json.load(f)
 
-        # Extract config and solver info using constants
         self.config = self.metadata[CONFIG_KEY]
         self.solver = self.metadata[SOLVER_KEY]
 
-        self.domain_length = (
-            (self.config[NUM_DOMAIN_POINTS_KEY] - 1)
-            * self.config[SPATIAL_STEP_SIZE_KEY]
-        )
+        self.domain_length = (self.solver[NUM_DOMAIN_POINTS_KEY] - 1) * self.solver[SPATIAL_STEP_SIZE_KEY]
 
         self.spatial_step_size = self.solver[SPATIAL_STEP_SIZE_KEY]
         self.num_domain_points = self.solver[NUM_DOMAIN_POINTS_KEY]
@@ -40,10 +34,8 @@ class BurgersSolution:
         self.time_step_size = self.solver[TIME_STEP_SIZE_KEY]
         self.max_time = (self.time_steps - 1) * self.time_step_size
 
-        # Cache for on-demand timestep loading
         self._cache = {}
 
-        # Validate and store initial condition parameters
         try:
             bias = float(self.metadata[BIAS_KEY])
             terms = self.metadata[TERMS_KEY]
@@ -71,18 +63,8 @@ class BurgersSolution:
             ),
         }
 
-    def calculateArtificialViscosity(self, u):
-        """Compute artificial viscosity for a given timestep array u."""
-        av = np.zeros_like(u)
-
-        for i in range(1, len(u) - 1):
-            if abs(u[i + 1] - u[i - 1]) > 0.1:
-                av[i] = 0.01 * abs(u[i + 1] - u[i - 1])
-
-        return av
 
     def initial_condition(self, x):
-
         if x < 0 or x > self.domain_length:
             raise ValueError(
                 f"x={x} is out of domain bounds [0, {self.domain_length}]"
@@ -101,7 +83,8 @@ class BurgersSolution:
             )
         )
 
-    def _get_time_step(self, time_step_index):
+
+    def get_time_step(self, time_step_index):
 
         if time_step_index in self._cache:
             return self._cache[time_step_index]
@@ -127,33 +110,33 @@ class BurgersSolution:
 
         return x_array, u_array
 
-    def non_zero_viscosity_points(self):
-        """
-        Yield timestep, x index, and artificial viscosity
-        only where viscosity is required (ux < 0)
-        """
 
+    def requires_artificial_viscosity_generator(self):
+        # lists the points that require artificial viscosity to make stable
         for t_index in range(self.time_steps):
 
-            _, u = self._get_time_step(t_index)
+            x_t, u_t = self.get_time_step(t_index)
 
-            av_array = self.calculateArtificialViscosity(u)
-
-            for i in range(1, self.num_domain_points - 1):
-
+            for i in range(self.num_domain_points - 1):
                 ux = (
-                    (u[i + 1] - u[i - 1])
-                    / (2.0 * self.spatial_step_size)
+                    (u_t[i + 1] - u_t[self.num_domain_points - 2]) / (2.0 * self.spatial_step_size)
+                    if i == 0
+                    else (u_t[i + 1] - u_t[i - 1]) / (2.0 * self.spatial_step_size)
                 )
 
                 if ux < 0:
-                    yield t_index, i, av_array[i]
+                    if i == 0:
+                        yield (t_index, abs(ux), self.spatial_step_size, u_t[i], u_t[i + 1], u_t[self.num_domain_points - 2])
+                    else:
+                        yield (t_index, abs(ux), self.spatial_step_size, u_t[i], u_t[i + 1], u_t[i - 1])
+                else:
+                    yield None
 
     def _interpolate_spatial(self, x, x_array, u_array):
         return np.interp(x, x_array, u_array)
 
-    def get_u(self, x, t):
 
+    def get_u(self, x, t):
         if x < 0 or x > self.domain_length:
             raise ValueError(
                 f"x={x} is out of domain bounds [0, {self.domain_length}]"
@@ -172,14 +155,14 @@ class BurgersSolution:
             t_index_upper = self.time_steps - 1
             t_index_lower = t_index_upper
 
-        x_array_lower, u_array_lower = self._get_time_step(t_index_lower)
+        x_array_lower, u_array_lower = self.get_time_step(t_index_lower)
 
         if t_index_lower == t_index_upper:
             return self._interpolate_spatial(
                 x, x_array_lower, u_array_lower
             )
 
-        x_array_upper, u_array_upper = self._get_time_step(t_index_upper)
+        x_array_upper, u_array_upper = self.get_time_step(t_index_upper)
 
         u_lower = self._interpolate_spatial(
             x, x_array_lower, u_array_lower
@@ -199,11 +182,10 @@ class BurgersSolution:
 
         return u_lower * (1 - weight) + u_upper * weight
 
+
     def clear_cache(self):
         self._cache.clear()
 
-    def get_time_step_data(self, time_step_index):
-        return self._get_time_step(time_step_index)
 
     def __repr__(self):
         return (
