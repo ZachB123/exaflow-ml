@@ -17,7 +17,7 @@ const std::string TRAINING_DIR = "../training_data";
 
 // what scheme we are using for the configuration
 const auto SCHEME_FACTORY = []() {
-    return std::make_unique<LaxWendroff>();
+    return std::make_unique<Godunov>();
 };
 
 // constant solver configurations
@@ -44,12 +44,11 @@ const double FREQ_MAX = 20.0;
 // wrap-around frequency multiplier
 const int WRAP_K_MIN = 1;
 const int WRAP_K_MAX = 20;
-const int WRAP_K_DELTA_MIN = 1;
+const int WRAP_K_DELTA_MIN = 2;
 const int WRAP_K_DELTA_MAX = 10;
 
-RandomInitialConditionConfig generateRandomInitialConditionConfig() {
-    static std::random_device rd;
-    static std::mt19937 rng(rd());
+RandomInitialConditionConfig generateRandomInitialConditionConfig(unsigned int seed) {
+    std::mt19937 rng(seed);
 
     std::uniform_int_distribution<int> n_dist(N_MIN, N_MAX);
     std::uniform_real_distribution<double> domain_dist(DOMAIN_MIN, DOMAIN_MAX);
@@ -125,7 +124,7 @@ void deleteExistingSamples() {
     }
 }
 
-void parseCommandLineArguments(int argc, char* argv[], int& num_samples, bool& append_mode, int& time_steps, double& time_step_size) {
+void parseCommandLineArguments(int argc, char* argv[], int& num_samples, bool& append_mode, int& time_steps, double& time_step_size, unsigned int &seed) {
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         
@@ -168,6 +167,18 @@ void parseCommandLineArguments(int argc, char* argv[], int& num_samples, bool& a
                 std::exit(1);
             }
         }
+        else if (arg == "--seed" || arg == "-sd") {
+            if (i + 1 >= argc) {
+                std::cerr << "Error: " << arg << " requires a value\n";
+                std::exit(1);
+            }
+            try {
+                seed = std::stoi(argv[++i]);
+            } catch (const std::exception& e) {
+                std::cerr << "Error: Invalid value for " << arg << ": " << argv[i] << "\n";
+                std::exit(1);
+            }
+        }
         else {
             std::cerr << "Error: Unknown argument '" << arg << "'\n";
             std::cerr << "Valid arguments:\n";
@@ -175,6 +186,7 @@ void parseCommandLineArguments(int argc, char* argv[], int& num_samples, bool& a
             std::cerr << "  --append, -a                 Append to existing samples\n";
             std::cerr << "  --time-step, -ts <value>     Time step size\n";
             std::cerr << "  --num-time-steps, -nts <num> Number of time steps\n";
+            std::cerr << "  --seed, -sd <num>             Seed for randomly generated functions\n";
             std::exit(1);
         }
     }
@@ -186,8 +198,9 @@ int main(int argc, char* argv[]) {
     bool append_mode = false;
     int time_steps = DEFAULT_TIME_STEPS;
     double time_step_size = DEFAULT_TIME_STEP_SIZE;
+    unsigned int seed = std::random_device{}();
     
-    parseCommandLineArguments(argc, argv, num_samples, append_mode, time_steps, time_step_size);
+    parseCommandLineArguments(argc, argv, num_samples, append_mode, time_steps, time_step_size, seed);
     
     int start_sample_index = 0;
     
@@ -205,11 +218,13 @@ int main(int argc, char* argv[]) {
     auto total_start = std::chrono::high_resolution_clock::now();
 
     for (int sample_index = start_sample_index; sample_index < start_sample_index + num_samples; ++sample_index) {
+        // make sure each sample is different, but if we do seperate runs with same seed we can get same functions
+        unsigned int current_seed = seed + (sample_index - start_sample_index);
 
         auto sample_start = std::chrono::high_resolution_clock::now();
 
-        RandomInitialConditionConfig cfg = generateRandomInitialConditionConfig();
-        RandomInitialCondition f(cfg);
+        RandomInitialConditionConfig cfg = generateRandomInitialConditionConfig(current_seed);
+        RandomInitialCondition f(cfg, false, true, current_seed);
 
         SolverConfig solver_cfg;
         solver_cfg.kinematic_viscosity = KINEMATIC_VISCOSITY;
