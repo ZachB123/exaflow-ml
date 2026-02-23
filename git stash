@@ -1,0 +1,101 @@
+* [33m31e85fd[m[33m ([m[1;36mHEAD -> [m[1;32mfeature/non_zero_viscosity_generator[m[33m)[m Move non-zero viscotiy generator into BurgersSolution class and use ux < 0 criterion
+* [33m8de4915[m Rename Godunov.cpp to lowercase
+*   [33m2ae2d6d[m Merge remote-tracking branch 'origin/main' into feature/non_zero_viscosity_generator
+[32m|[m[33m\[m  
+[32m|[m *   [33m49173ed[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge pull request #11 from ZachB123/ryan/u0_initial_condition
+[32m|[m [34m|[m[35m\[m  
+[32m|[m [34m|[m * [33m94e1352[m initial function minor styling fixes
+[32m|[m [34m|[m * [33m37b813c[m addressed all PR comments
+[32m|[m [34m|[m * [33mf5a538f[m wrote u0 for initial condition
+[32m|[m * [35m|[m   [33m3d1ffe9[m Merge pull request #6 from ZachB123/wrap-around-frequency-fix
+[32m|[m [35m|[m[1;31m\[m [35m\[m  
+[32m|[m [35m|[m [1;31m|[m[35m/[m  
+[32m|[m [35m|[m[35m/[m[1;31m|[m   
+[32m|[m [35m|[m * [33m2ad0d4d[m new method with min+delta per zachs c omment
+[32m|[m [35m|[m * [33m8ef2c04[m[33m ([m[1;31morigin/wrap-around-frequency-fix[m[33m)[m fixed wrap around frequencies sometimes being identical in training_data_generator.cpp
+[32m|[m * [1;31m|[m   [33m0fab8a1[m Merge pull request #9 from ZachB123/bug/msvc-compiler-warnings
+[32m|[m [1;32m|[m[1;33m\[m [1;31m\[m  
+[32m|[m [1;32m|[m * [1;31m|[m [33m2bf89c2[m[33m ([m[1;31morigin/bug/msvc-compiler-warnings[m[33m)[m Make compiler warning flags conditional for MSVC
+[32m|[m [1;32m|[m[1;32m/[m [1;31m/[m  
+* [1;32m/[m [1;31m/[m [33m3bb49cf[m[33m ([m[1;31morigin/feature/non_zero_viscosity_generator[m[33m)[m Add non-zero viscosity data generator and update Godunov.cpp filename to be lowercase
+[1;32m|[m[1;32m/[m [1;31m/[m  
+* [1;31m|[m   [33mb1133f3[m[33m ([m[1;32mmain[m[33m, [m[1;32mfeature/non-zero-viscosity[m[33m)[m Merge pull request #8 from ZachB123/tweak/stencil-to-scheme
+[1;34m|[m[1;35m\[m [1;31m\[m  
+[1;34m|[m * [1;31m|[m [33m9be983e[m[33m ([m[1;31morigin/tweak/stencil-to-scheme[m[33m)[m Included Godunov and made appropriate changes
+[1;34m|[m * [1;31m|[m   [33mb7a86be[m Merge remote-tracking branch 'origin/main' into tweak/stencil-to-scheme
+[1;34m|[m [1;36m|[m[1;34m\[m [1;31m\[m  
+[1;34m|[m [1;36m|[m[1;34m/[m [1;31m/[m  
+[1;34m|[m[1;34m/[m[1;36m|[m [1;31m|[m   
+* [1;36m|[m [1;31m|[m   [33m43b050a[m Merge pull request #7 from ZachB123/feature/godunov-scheme
+[1;31m|[m[33m\[m [1;36m\[m [1;31m\[m  
+[1;31m|[m [33m|[m[1;31m_[m[1;36m|[m[1;31m/[m  
+[1;31m|[m[1;31m/[m[33m|[m [1;36m|[m   
+[1;31m|[m * [1;36m|[m [33m250c871[m stylistic changes made
+[1;31m|[m * [1;36m|[m [33m06361e7[m godunov scheme
+[1;31m|[m [33m|[m * [33m36ea6d3[m stencil to scheme changed
+[1;31m|[m [33m|[m[1;31m/[m  
+[1;31m|[m[1;31m/[m[33m|[m   
+* [33m|[m   [33m78e245b[m Merge pull request #4 from ZachB123/bug/fix-cfl
+[34m|[m[35m\[m [33m\[m  
+[34m|[m * [33m|[m [33mdc14646[m[33m ([m[1;31morigin/bug/fix-cfl[m[33m)[m cfl fix
+[34m|[m[34m/[m [33m/[m  
+* [33m|[m   [33me33f0f1[m Merge pull request #3 from ZachB123/feature/solution-interpolation-querying
+[36m|[m[1;31m\[m [33m\[m  
+[36m|[m * [33m|[m [33mb8cd448[m solution interpolation querying, cfl fix, removed garbage nn
+[36m|[m[36m/[m [33m/[m  
+* [33m|[m   [33m68abfb6[m Merge pull request #2 from ZachB123/windows-fixes
+[33m|[m[1;33m\[m [33m\[m  
+[33m|[m [1;33m|[m[33m/[m  
+[33m|[m[33m/[m[1;33m|[m   
+[33m|[m * [33m97bd967[m Fix Windows build (C++20, headers, math constants)
+[33m|[m[33m/[m  
+*   [33m4d81504[m Merge pull request #8 from VIP-CFD/feature/training-data-generator-enhanced-config
+[1;34m|[m[1;35m\[m  
+[1;34m|[m * [33mc7aca05[m sample timing
+[1;34m|[m * [33m7de5a44[m training data generator improvements
+[1;34m|[m[1;34m/[m  
+*   [33mcfa6d77[m Merge pull request #7 from VIP-CFD/bug/Lax-Wendroff-BC-fix
+[1;36m|[m[31m\[m  
+[1;36m|[m * [33m5a6e444[m BCs work Lax Wendroff
+[1;36m|[m[1;36m/[m  
+* [33mb698e4a[m building an execuable for generating training data; run script using ./training_data_generator
+* [33mac7bec1[m neuralnet directory initialized. created a factory function to generate artificial viscosity models based on an array passed in defining the interior layer sizes. e.g. [32,32,16] creates input(5) -> 32 dense -> 32 dense -> 16 dense -> output(1)
+*   [33m9ffb3e5[m Merge pull request #6 from VIP-CFD/feature/nan-detection
+[32m|[m[33m\[m  
+[32m|[m * [33m275d53d[m nan detection
+* [33m|[m [33m885c56b[m Merge pull request #5 from VIP-CFD/tweak/contributing-doc
+[34m|[m[33m\[m[33m|[m 
+[34m|[m * [33me655890[m contributing rewording
+[34m|[m * [33m1a16ec5[m contributing.md
+[34m|[m[34m/[m  
+* [33md279366[m Start Spring 26
+* [33m741fe1f[m readme updates and small changes
+* [33m7b2c332[m training data generator
+* [33m819c904[m removal of scheme enum
+* [33me278ba4[m Burger stencils and outline for computation of spatial step size
+* [33m9283c13[m artificial viscosity
+* [33me4ed362[m Initial Artificial Viscosity
+* [33mb32f6c9[m solver with random function
+* [33m6b37e54[m Random initial condition generator
+* [33me8b2d54[m python visualizer
+* [33mc334dd6[m Readme updates, minor tweaks to solver and main method
+* [33m9478916[m 1d solver refactoring
+* [33m7423319[m py vs cpp comparison plot downloaded
+* [33m5ca6018[m created similar code with py, compailed cpp code, compared both
+* [33meb2b462[m updating 1d_burgers_solver.cpp
+* [33m2fc784e[m added a basic readme about burgers and simplified the code; need to test
+* [33maee4e7b[m added initial 1d burgers equation solver; still need to test
+*   [33m18cb78f[m Merge pull request #4 from VIP-CFD/revert-3-AbhayBurgers
+[36m|[m[1;31m\[m  
+[36m|[m * [33md0586fa[m Revert "Abhay burgers"
+[36m|[m[36m/[m  
+*   [33md8265cd[m Merge pull request #3 from VIP-CFD/AbhayBurgers
+[1;32m|[m[1;33m\[m  
+[1;32m|[m * [33m36fdafa[m Add/update burgers solver and related files
+[1;32m|[m * [33mbb3f3b4[m Update README and burgers folder
+[1;32m|[m * [33mda16c6f[m Merge pull request #1 from VIP-CFD/abhayBurger
+[1;32m|[m[1;32m/[m[1;35m|[m 
+[1;32m|[m * [33m1ab4639[m Solve Burger's Equation for C++ Utilization
+[1;32m|[m[1;32m/[m  
+* [33m9649e40[m Update README.md
+* [33m5214e12[m Initial commit
