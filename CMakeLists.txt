@@ -24,7 +24,7 @@ set(SHARED_SOURCES
     src/initial_condition_generator.cpp
     src/schemes/ftcs.cpp
     src/schemes/lax_wendroff.cpp
-    src/schemes/Godunov.cpp
+    src/schemes/godunov.cpp
 )
 
 # regular experimental solver

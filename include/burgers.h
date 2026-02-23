@@ -1,6 +1,7 @@
 #pragma once
 #include <functional>
 #include <vector>
+#include <memory>
 
 #include "burger_scheme.h"
 
