@@ -34,6 +34,41 @@ void run_all_schemes(const std::string &base_domain,
 }
 
 int main() {
+  // --- WIKIPEDIA TEST CASES ---
+  std::cout << "\n--- WIKIPEDIA TEST CASES ---\n";
+
+  SolverConfig wiki_config_base = {
+      .kinematic_viscosity = 1.0, // Will be overwritten in loop
+      .time_steps = 5000,
+      .domain_length = 12.0, // Matches [-6, 6] range
+      .time_step_size = 0.001};
+
+  // Gaussian Initial Condition: u(x,0) = e^(-x^2/2)
+  std::function<double(double)> gaussian_function = [](double x) -> double {
+    double shifted_x = x - 6.0; // Center the plot at x=6 to mimic [-6, 6]
+    return std::exp(-(shifted_x * shifted_x) / 2.0);
+  };
+
+  // N-wave type Initial Condition: u(x,0) = e^(-(x-1)^2/2) - e^(-(x+1)^2/2)
+  std::function<double(double)> n_wave_function = [](double x) -> double {
+    double shifted_x = x - 6.0; // Center the plot at x=6 to mimic [-6, 6]
+    double part1 = std::exp(-(std::pow(shifted_x - 1.0, 2)) / 2.0);
+    double part2 = std::exp(-(std::pow(shifted_x + 1.0, 2)) / 2.0);
+    return part1 - part2;
+  };
+
+  std::vector<double> viscosities = {1.0, 0.1, 0.01};
+
+  for (double v : viscosities) {
+    wiki_config_base.kinematic_viscosity = v;
+    std::string v_str = (v == 1.0) ? "1.0" : (v == 0.1) ? "0.1" : "0.01";
+
+    run_all_schemes("../data_v2", "wiki_gaussian_" + v_str, wiki_config_base,
+                    gaussian_function, 10);
+    run_all_schemes("../data_v2", "wiki_n_wave_" + v_str, wiki_config_base,
+                    n_wave_function, 10);
+  }
+
   // --- PREVIOUS TEST CASES ---
   std::cout << "\n--- PREVIOUS TEST CASES ---\n";
 
