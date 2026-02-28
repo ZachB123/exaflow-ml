@@ -4,48 +4,42 @@
 #include <string>
 #include <vector>
 
-// ---------------------------------------------------------------------------
-// Configuration for the 2D Godunov Burgers solver
-// ---------------------------------------------------------------------------
+// All the settings you need to configure a 2D run.
 struct Solver2dConfig {
-  int Nx;               // number of cells in x
-  int Ny;               // number of cells in y
-  double Lx;            // domain length in x  [0, Lx]
-  double Ly;            // domain length in y  [0, Ly]
-  double CFL;           // CFL number (<=0.45 recommended for 2D unsplit)
-  double t_end;         // final simulation time
-  double save_interval; // physical time between saved snapshots
+  int Nx;               // grid cells in x
+  int Ny;               // grid cells in y
+  double Lx;            // domain width  [0, Lx]
+  double Ly;            // domain height [0, Ly]
+  double CFL;           // time step safety factor, keep <= 0.45 for 2D
+  double t_end;         // stop time
+  double save_interval; // how often (in sim-time) to write a snapshot to disk
 };
 
-// ---------------------------------------------------------------------------
-// 2D Unsplit Godunov Solver for the inviscid Burgers system
+// Solves the inviscid 2D Burgers system:
+//   u_t + (u^2/2)_x + (u*v)_y = 0
+//   v_t + (u*v)_x  + (v^2/2)_y = 0
 //
-//   u_t + (u^2/2)_x + (uv)_y = 0
-//   v_t + (uv)_x  + (v^2/2)_y = 0
-//
-// Finite-volume, first-order, periodic BCs.
-// Data layout: flat vector, idx(i,j) = i*Ny + j  (row-major, cache-friendly).
-// All loops are structured as  for(i ...) for(j ...)  to keep j as the
-// fast-varying index and maximise cache-line utilisation.
-// ---------------------------------------------------------------------------
+// First-order Godunov finite-volume scheme, unsplit, periodic boundaries.
+// Grid data is stored flat: index(i,j) = i*Ny + j (row-major).
+// All loops run i-outer / j-inner so the inner index is the fast one,
+// which keeps memory accesses sequential and cache-friendly.
 class BurgersGodunovSolver2d {
 public:
   BurgersGodunovSolver2d(const Solver2dConfig &config);
 
-  // Set initial conditions via two separate lambdas: u0(x,y) and v0(x,y).
+  // Set u(x,y,0) and v(x,y,0) via two lambdas.
   void setInitialConditions(const std::function<double(double, double)> &u0,
                             const std::function<double(double, double)> &v0);
 
-  // Run the solver to t_end.  Prints conservation + CFL diagnostics each step.
+  // Run solver to t_end. Prints conservation and CFL info along the way.
   void solve();
 
-  // Write all saved snapshots to <base_folder>/<run_name>/timestep_XXXXX.csv
-  // Each CSV has columns: x,y,u,v
+  // Write snapshots to <base_folder>/<run_name>/timestep_XXXXX.csv
+  // Columns: x, y, u, v
   void saveSolution(const std::string &base_folder,
                     const std::string &run_name) const;
 
 private:
-  // ------- config -------
   int Nx_, Ny_;
   double Lx_, Ly_;
   double dx_, dy_;
@@ -53,12 +47,10 @@ private:
   double t_end_;
   double save_interval_;
 
-  // ------- state -------
-  std::vector<double> u_, v_; // current fields
-  std::vector<double> u_next_, v_next_;
+  std::vector<double> u_, v_;           // current fields, size Nx*Ny
+  std::vector<double> u_next_, v_next_; // scratch buffers for the next step
 
-  // ------- history -------
-  // Each snapshot is {t, u[Nx*Ny], v[Nx*Ny]}
+  // One saved snapshot: time value + full u and v arrays at that time.
   struct Snapshot {
     double t;
     std::vector<double> u;
@@ -66,26 +58,23 @@ private:
   };
   std::vector<Snapshot> history_;
 
-  // ------- IC store -------
   std::function<double(double, double)> ic_u_;
   std::function<double(double, double)> ic_v_;
 
-  // ------- helpers -------
-  // Flat index (row-major, j fast)
+  // Flat 2D index, j is the fast (inner) dimension.
   inline int idx(int i, int j) const { return i * Ny_ + j; }
 
-  // Periodic wrap
+  // Periodic wrap so we don't need special boundary code.
   inline int wrapI(int i) const { return (i + Nx_) % Nx_; }
   inline int wrapJ(int j) const { return (j + Ny_) % Ny_; }
 
-  // Godunov flux for self-advection: f(q) = q^2/2  with wave speed = q
+  // Godunov flux for a scalar self-advection term: f(q) = q^2/2.
   double compute_flux(double qL, double qR) const;
 
-  // Upwind transport flux: transports quantity q with wave speed w
-  // Flux = w * q  using donor-cell upwinding on the w Riemann problem
+  // Upwind flux for a transport term: flux = w*q.
+  // w is the wave speed, q is the thing being transported.
   double compute_transport_flux(double wL, double wR, double qL,
                                 double qR) const;
 
-  // One time-step update (dt already computed)
   void step(double dt);
 };

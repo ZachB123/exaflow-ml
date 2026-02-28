@@ -5,62 +5,49 @@
 #include "burgers_godunov2d.h"
 
 /*
-    Driver for the 2D Unsplit Godunov Burgers solver.
+    Driver for the 2D Godunov Burgers solver.
 
-    Runs two test cases back to back:
-      1. Square-wave (top-hat) IC: u = v = 1 inside a centred patch, 0 outside.
-         Produces a 2D shock visible as a sharp discontinuity propagating
-         diagonally toward the domain corner.
+    Runs two test cases:
 
-      2. Gaussian bump IC: u = v = exp(-r^2 / (2*sigma^2)) centred at (Lx/2,
-   Ly/2). Produces smooth steepening into a circular shock.
+    1. Square-wave (top-hat): u = v = 1 inside the centre 40% of the domain,
+       0 everywhere else. This produces sharp 2D shocks on all four edges of
+       the patch that propagate diagonally outward.
 
-    Output data is written to ../data_2d/<run_name>/timestep_XXXXX.csv
-    Each CSV: columns x, y, u, v.
+    2. Gaussian bump: u = v = exp(-r^2 / (2*sigma^2)) centred at (Lx/2, Ly/2).
+       Smooth at t=0, but the centre moves faster and eventually forms a
+       circular shock front.
 
-    Usage:
-        burgers_godunov2d.exe
+    Output goes to ../data_2d/<run_name>/timestep_XXXXX.csv
+    Columns: x, y, u, v
 */
 
 int main() {
-  // ---- Shared grid / time setup ----
   Solver2dConfig cfg;
-  cfg.Nx = 200; // cells in x
-  cfg.Ny = 200; // cells in y
-  cfg.Lx = 1.0; // domain [0, 1]
+  cfg.Nx = 200;
+  cfg.Ny = 200;
+  cfg.Lx = 1.0;
   cfg.Ly = 1.0;
-  cfg.CFL = 0.45;           // safe 2D unsplit CFL (<0.5)
-  cfg.t_end = 0.4;          // enough time to develop a clear shock
-  cfg.save_interval = 0.01; // save every 0.01 time units -> 40 snapshots
+  cfg.CFL = 0.45; // well below the 0.5 stability limit for 2D unsplit
+  cfg.t_end = 0.4;
+  cfg.save_interval = 0.01; // 40 snapshots + IC = 41 files total
 
-  // ================================================================
-  // Test Case 1: Square-wave (top-hat) initial condition
-  // ================================================================
-  std::cout << "========================================\n";
-  std::cout << " Test Case 1: Square-wave IC\n";
-  std::cout << "========================================\n";
+  // ---- Test case 1: square-wave IC ----
+  std::cout << "=== Test Case 1: Square-wave IC ===\n";
   {
     BurgersGodunovSolver2d solver(cfg);
 
-    // u = v = 1 inside [0.3, 0.7] x [0.3, 0.7], 0 elsewhere
-    auto u0 = [&](double x, double y) -> double {
-      if (x >= 0.3 && x <= 0.7 && y >= 0.3 && y <= 0.7)
-        return 1.0;
-      return 0.0;
+    // u = v = 1 inside [0.3, 0.7] x [0.3, 0.7], 0 outside
+    auto sq = [](double x, double y) -> double {
+      return (x >= 0.3 && x <= 0.7 && y >= 0.3 && y <= 0.7) ? 1.0 : 0.0;
     };
-    auto v0 = u0; // same IC for v
 
-    solver.setInitialConditions(u0, v0);
+    solver.setInitialConditions(sq, sq);
     solver.solve();
     solver.saveSolution("../data_2d", "godunov_squarewave");
   }
 
-  // ================================================================
-  // Test Case 2: Gaussian bump initial condition
-  // ================================================================
-  std::cout << "========================================\n";
-  std::cout << " Test Case 2: Gaussian bump IC\n";
-  std::cout << "========================================\n";
+  // ---- Test case 2: Gaussian bump IC ----
+  std::cout << "=== Test Case 2: Gaussian bump IC ===\n";
   {
     BurgersGodunovSolver2d solver(cfg);
 
@@ -68,13 +55,13 @@ int main() {
     const double cx = cfg.Lx / 2.0;
     const double cy = cfg.Ly / 2.0;
 
-    auto u0 = [=](double x, double y) -> double {
+    // [=] captures sigma, cx, cy by value so the lambda stays valid
+    auto gauss = [=](double x, double y) -> double {
       double r2 = (x - cx) * (x - cx) + (y - cy) * (y - cy);
       return std::exp(-r2 / (2.0 * sigma * sigma));
     };
-    auto v0 = u0; // same IC for v
 
-    solver.setInitialConditions(u0, v0);
+    solver.setInitialConditions(gauss, gauss);
     solver.solve();
     solver.saveSolution("../data_2d", "godunov_gaussian");
   }
