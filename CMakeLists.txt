@@ -38,3 +38,9 @@ add_executable(training_data_generator
     src/training_data_generator.cpp
     ${SHARED_SOURCES}
 )
+
+# 2D Godunov solver for the 2D Burgers system
+add_executable(burgers_godunov2d
+    src/main_godunov2d.cpp
+    src/burgers_godunov2d.cpp
+)
