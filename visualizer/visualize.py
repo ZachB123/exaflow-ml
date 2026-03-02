@@ -32,11 +32,48 @@ def load_frames(data_dir):
 
     return x, frames, files
 
+def resolve_folder(folder_name):
+    """
+    Resolves the folder path for a given sample name or relative path.
+    If folder_name contains '/', treat as a relative or absolute path.
+    Otherwise, search common locations: training_data/, data/, project root.
+    If multiple matches are found, print all and exit with error.
+    Returns the absolute path to the folder, or raises FileNotFoundError.
+    """
+    if os.path.sep in folder_name:
+        # Treat as a relative or absolute path
+        candidate = os.path.join(PROJECT_ROOT, folder_name)
+        if os.path.isdir(candidate):
+            return candidate
+        if os.path.isdir(folder_name):
+            return os.path.abspath(folder_name)
+        raise FileNotFoundError(f"Folder not found: {folder_name}")
+    
+    # Search all common locations
+    candidates = []
+    td_candidate = os.path.join(PROJECT_ROOT, "training_data", folder_name)
+    if os.path.isdir(td_candidate):
+        candidates.append(td_candidate)
+    data_candidate = os.path.join(PROJECT_ROOT, "data", folder_name)
+    if os.path.isdir(data_candidate):
+        candidates.append(data_candidate)
+    root_candidate = os.path.join(PROJECT_ROOT, folder_name)
+    if os.path.isdir(root_candidate):
+        candidates.append(root_candidate)
+    
+    if len(candidates) == 1:
+        return candidates[0]
+    elif len(candidates) > 1:
+        print(f"Error: Multiple folders found for '{folder_name}':")
+        for idx, c in enumerate(candidates):
+            print(f"  [{idx+1}] {c}")
+        print("Please specify the full path to the folder you want to visualize.")
+        exit(1)
+    else:
+        raise FileNotFoundError(f"Could not find folder '{folder_name}' in training_data/, data/, or project root.")
 
 def run_visualizer(folder_name, initial_speed):
-    # data_dir = os.path.join(PROJECT_ROOT, "training_data", folder_name)
-    # data_dir = os.path.join(PROJECT_ROOT, "data", folder_name)
-    data_dir = os.path.join(PROJECT_ROOT, folder_name)
+    data_dir = resolve_folder(folder_name)
     x, frames, files = load_frames(data_dir)
 
     fig, ax = plt.subplots()
@@ -190,7 +227,7 @@ def main():
     parser.add_argument(
         "folder",
         type=str,
-        help="Folder name inside data/, e.g. step_function or sine_wave",
+        help="Sample name (e.g. sample_000000) or folder path. Searches training_data/, data/, and project root.",
     )
     parser.add_argument(
         "--speed",
@@ -200,7 +237,11 @@ def main():
     )
 
     args = parser.parse_args()
-    run_visualizer(args.folder, args.speed)
+    try:
+        run_visualizer(args.folder, args.speed)
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        exit(1)
 
 
 if __name__ == "__main__":
