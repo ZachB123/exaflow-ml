@@ -147,11 +147,13 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
     std::cout << "Writing binary solution to: " << filename << std::endl;
 
 	// Add solution data to binary file, writing one timestep at a time
+    size_t written_timesteps = 0; // used for metadata file
     for (size_t t = 0; t < solution_history.size(); ++t) {
 
         if (t % gap != 0) {
             continue;
         }
+		written_timesteps++;
 
         const auto& u_t = solution_history[t];
 
@@ -179,7 +181,7 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
     }
 
     meta_file << "num_domain_points=" << most_recent_num_domain_points << "\n";
-    meta_file << "num_timesteps=" << (solution_history.size() + gap - 1) / gap << "\n"; // int ceiling division
+    meta_file << "num_timesteps=" << written_timesteps << "\n";
     meta_file << "dx=" << most_recent_spatial_step_size << "\n";
     meta_file << "dt=" << time_step_size << "\n";
     meta_file << "gap=" << gap << "\n";
