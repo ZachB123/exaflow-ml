@@ -11,6 +11,11 @@ void FTCS::calculateNextU(const std::vector<double>& u, std::vector<double>& u_n
     }
 
     // wrap around
+    // for some reason adding this artificial viscosity drastically slows the sim down.
+    // u_next[0] = u[0]
+    //     - u[0] * time_step_size / spatial_step_size * (u[0] - u[num_domain_points - 2])
+    //     + (kinematic_viscosity + calculateArtificialViscosity(u, cq, spatial_step_size, 0, num_domain_points)) * time_step_size / (spatial_step_size * spatial_step_size)
+    //     * (u[1] - 2 * u[0] + u[num_domain_points - 2]);
     u_next[0] = u[0]
         - u[0] * time_step_size / spatial_step_size * (u[0] - u[num_domain_points - 2])
         + kinematic_viscosity * time_step_size / (spatial_step_size * spatial_step_size)

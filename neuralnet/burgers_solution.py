@@ -32,6 +32,7 @@ class BurgersSolution:
         self.num_domain_points = self.solver[NUM_DOMAIN_POINTS_KEY]
         self.time_steps = self.solver[TIME_STEPS_KEY]
         self.time_step_size = self.solver[TIME_STEP_SIZE_KEY]
+        self.domain_length = self.config[DOMAIN_LENGTH_KEY]
         self.max_time = (self.time_steps - 1) * self.time_step_size
 
         self._cache = {}

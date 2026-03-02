@@ -1,8 +1,16 @@
-from burgers_solution import BurgersSolution
+from pathlib import Path
 import numpy as np
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+from multiprocessing import Pool, cpu_count
+from tqdm.contrib.concurrent import process_map
 
-if __name__ == "__main__":
-    solution = BurgersSolution("sample_000000")
+from constants import *
+from burgers_solution import BurgersSolution
+
+
+def verify_initial_condition_reconstruction(sample):
+    solution = BurgersSolution(sample)
     print(solution)
 
     #testing u0() vs. csv data for timestep_00000
@@ -18,30 +26,90 @@ if __name__ == "__main__":
     print("Max abs error:", max_abs_error)
     print("Mean abs error:", mean_abs_error)
 
-    valid_count = 0
-    none_count = 0
 
-    for item in solution.requires_artificial_viscosity_generator():
-        if item is None:
-            none_count += 1
-        else:
-            valid_count += 1
+def get_training_data_folder_names():
+    return sorted([item.name for item in DEFAULT_TRAINING_DATA_DIR.iterdir() if item.is_dir()])
 
-    total = valid_count + none_count
 
-    print(f"Valid yields: {valid_count}")
-    print(f"None yields: {none_count}")
-    print(f"Total: {total}")
+def requires_artificial_viscosity(dx, u_i_minus_1, u_i_plus_1):
+    ux = (u_i_plus_1 - u_i_minus_1) / (2.0 * dx)
+    return ux < 0
 
-    if total > 0:
-        print(f"Valid ratio: {valid_count / total:.6f}")
-        print(f"None ratio: {none_count / total:.6f}")
-        
-    # for abs_ux, dx, u_i, u_ip1, u_im1 in solution.requires_artificial_viscosity_generator():
-    #     print(
-    #         f"(abs_ux={abs_ux:.6f}, "
-    #         f"dx={dx:.6f}, "
-    #         f"u_i={u_i:.6f}, "
-    #         f"u_ip1={u_ip1:.6f}, "
-    #         f"u_im1={u_im1:.6f})"
-    #     )
+
+# def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0, eps=1e-3):
+#     uxx = u_i_plus_1 - 2*u_i + u_i_minus_1
+#     ux_diff = abs(u_i_plus_1 - u_i_minus_1)
+
+#     if abs(uxx) < eps or ux_diff < eps:
+#         return None
+
+#     return (2 / (dx * ux_diff)) * ((dx**2 / (dt * uxx)) * (u_next_i - u_i + u_i * (dt/dx) * (u_i_plus_1 - u_i_minus_1)) - nu)
+
+
+def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):
+    # todo store nu in the metadata
+    # sometimes got divide by 0
+    if (u_i_plus_1 - 2*u_i + u_i_minus_1) == 0:
+        return None
+
+    return (2 / (dx * abs(u_i_plus_1 - u_i_minus_1))) * ((dx**2 / (dt * (u_i_plus_1 - 2 * u_i + u_i_minus_1))) * (u_next_i - u_i + u_i * (dt/dx) * (u_i_plus_1 - u_i_minus_1)) - nu)
+
+
+def get_feature_matrices_for_sample(sample_name):
+    X_rows = []
+    y_rows = []
+
+    burgers_solution = BurgersSolution(sample_name)
+    fine_dt = burgers_solution.time_step_size
+    fine_dx = burgers_solution.spatial_step_size
+    coarse_dt = fine_dt * COARSENESS_MULTIPLIER
+    coarse_dx = fine_dx * COARSENESS_MULTIPLIER
+    coarse_num_timesteps = int(burgers_solution.max_time // coarse_dt)
+    coarse_num_domain_points = int(burgers_solution.domain_length // coarse_dx)
+    
+    print(fine_dt, fine_dx, coarse_dt, coarse_dx, coarse_num_timesteps, coarse_num_domain_points)
+
+    for time_step in range(min(coarse_num_timesteps, 2)):
+        # just ignoring the boundary condition for now cuz I need to ask yuvi about it
+        # and it probably won't make a difference for training
+        for spatial_step in range(1, coarse_num_domain_points):
+            curr_time = time_step * coarse_dt
+            next_time = (time_step + 1) * coarse_dt
+            curr_x = spatial_step * coarse_dx
+            prev_x = (spatial_step - 1) * coarse_dx
+            next_x = (spatial_step + 1) * coarse_dx
+
+            u_i = burgers_solution.get_u(curr_x, curr_time)
+            u_next_i = burgers_solution.get_u(curr_x, next_time)
+            u_i_minus_1 = burgers_solution.get_u(prev_x, curr_time)
+            u_i_plus_1 = burgers_solution.get_u(next_x, curr_time)
+
+            if requires_artificial_viscosity(coarse_dx, u_i_minus_1, u_i_plus_1):
+                cq = reverse_engineer_cq(coarse_dt, coarse_dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1)
+                if cq is not None:
+                    # print(cq)
+                    # we can't use u_next_i as a feature because we will never have that when running the sim normally
+                    X_rows.append([coarse_dt, coarse_dx, u_i, u_i_minus_1, u_i_plus_1])
+                    y_rows.append(cq)
+
+    X = np.array(X_rows)
+    y = np.array(y_rows)
+    return X, y
+
+
+if __name__ == "__main__":
+    samples = get_training_data_folder_names()
+
+    with Pool(processes=cpu_count()) as pool:
+        results = pool.map(get_feature_matrices_for_sample, samples)
+
+    X_matrices, y_matrices = zip(*results)
+
+    X = np.vstack(X_matrices)
+    y = np.concatenate(y_matrices)
+
+    print(f"cq mean: {y.mean()}, cq std: {y.std()}")
+
+
+
+

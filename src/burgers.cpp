@@ -67,7 +67,7 @@ void BurgersSolver1d::solve(double cq) {
     double spatial_step_size = time_step_size * max_u / ALPHA;
     // This spatial stepsize is bullshit and not actually what we want to use
     // if we use the previous calculation it just blows everything up
-    spatial_step_size = 0.01;
+    // spatial_step_size = 0.01;
     // spatial_step_size = domain_length / 1000.0;
     double num_domain_points = std::floor(domain_length / spatial_step_size);
     u.assign(num_domain_points, 0.0);

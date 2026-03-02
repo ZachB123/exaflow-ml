@@ -26,3 +26,7 @@ TERMS_KEY = "terms"
 AMPLITUDE_KEY = "amplitude"
 FREQUENCY_KEY = "frequency"
 PHASE_SHIFT_KEY = "phase_shift"
+
+# how much coarser our nn solve will be, for creating dt from the original solve dt
+# TODO make this a range so we don't rely on a single multiplier
+COARSENESS_MULTIPLIER = 1

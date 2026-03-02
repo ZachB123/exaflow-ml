@@ -20,7 +20,7 @@ class BurgersSolver1d {
 
 private:
     // used for calculating spatial step size and number of domain points
-    inline static const double ALPHA = 0.9;
+    inline static const double ALPHA = 0.3;
 
     // scheme for solving
     std::unique_ptr<BurgerScheme> scheme;

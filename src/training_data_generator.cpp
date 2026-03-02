@@ -23,7 +23,7 @@ const auto SCHEME_FACTORY = []() {
 // constant solver configurations
 const double KINEMATIC_VISCOSITY = 0.01;
 const int DEFAULT_TIME_STEPS = 10000;
-const double DEFAULT_TIME_STEP_SIZE = 0.00001;
+const double DEFAULT_TIME_STEP_SIZE = 0.0001;
 
 // n (number of terms)
 const int N_MIN = 1;
