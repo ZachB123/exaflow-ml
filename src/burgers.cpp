@@ -4,7 +4,8 @@
 #include <filesystem>
 #include <iomanip>
 #include <sstream>
-#include <cmath>  
+#include <cmath>
+#include <string>
 
 #include "burgers.h"
 
@@ -123,6 +124,10 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
         std::filesystem::create_directory(base_folder);
     }
 
+    if (gap <= 0) {
+        throw std::invalid_argument("gap must be > 0");
+    }
+
     // Create (or recreate) run folder
     std::string run_folder = base_folder + "/" + run_name;
     if (std::filesystem::exists(run_folder)) {
@@ -130,36 +135,61 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
         std::filesystem::remove_all(run_folder); // delete everything inside
     }
     std::filesystem::create_directory(run_folder);
-
     std::cout << "Writing results to: " << run_folder << std::endl;
 
-    // Write one file per time step
+	// Create and open binary file to hold solution data
+    std::string filename = run_folder + "/solution.bin";
+    std::ofstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file: " << filename << std::endl;
+        return;
+    }
+    std::cout << "Writing binary solution to: " << filename << std::endl;
+
+	// Add solution data to binary file, writing one timestep at a time
     for (size_t t = 0; t < solution_history.size(); ++t) {
 
         if (t % gap != 0) {
             continue;
         }
 
-        std::ostringstream filename;
-        filename << run_folder << "/timestep_"
-                 << std::setw(5) << std::setfill('0') << t << ".csv";
-
-        std::ofstream file(filename.str());
-        if (!file.is_open()) {
-            std::cerr << "Failed to open file: " << filename.str() << std::endl;
-            continue;
-        }
-
-        file << "x,u\n";
-
         const auto& u_t = solution_history[t];
-        for (int i = 0; i < most_recent_num_domain_points; ++i) {
-            double x = i * most_recent_spatial_step_size;  // compute x-coordinate
-            file << x << "," << u_t[i] << "\n";
+
+        file.write(
+            reinterpret_cast<const char*>(u_t.data()),
+            u_t.size() * sizeof(double)
+        );
+
+        if (!file) {
+            std::cerr << "Error writing timestep " << t << std::endl;
+            return;
         }
     }
+    file.close();
+    std::cout << "Binary file written successfully.\n";
 
-    std::cout << "All timesteps written successfully.\n";
+    // Create metadata text file
+    std::string meta_filename = run_folder + "/solution_meta.txt";
+    std::ofstream meta_file(meta_filename);
+
+    if (!meta_file.is_open()) {
+        std::cerr << "Failed to open metadata file: "
+            << meta_filename << std::endl;
+        return;
+    }
+
+    meta_file << "num_domain_points=" << most_recent_num_domain_points << "\n";
+    meta_file << "num_timesteps=" << (solution_history.size() + gap - 1) / gap << "\n"; // int ceiling division
+    meta_file << "dx=" << most_recent_spatial_step_size << "\n";
+    meta_file << "dt=" << time_step_size << "\n";
+    meta_file << "gap=" << gap << "\n";
+    meta_file << "domain_length=" << domain_length << "\n";
+    meta_file << "kinematic_viscosity=" << kinematic_viscosity << "\n";
+    meta_file << "scheme=" << scheme->getName() << "\n";
+
+    meta_file.close();
+    std::cout << "Metadata file written successfully.\n";
+
 }
 
 bool BurgersSolver1d::wasNanDetected() const {
