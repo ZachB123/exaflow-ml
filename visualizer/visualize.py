@@ -37,11 +37,10 @@ def resolve_folder(folder_name):
     Resolves the folder path for a given sample name or relative path.
     If folder_name contains '/', treat as a relative or absolute path.
     Otherwise, search common locations: training_data/, data/, project root.
-    If multiple matches are found, print all and exit with error.
+    If multiple matches are found, prompt user to select one.
     Returns the absolute path to the folder, or raises FileNotFoundError.
     """
     if os.path.sep in folder_name:
-        # Treat as a relative or absolute path
         candidate = os.path.join(PROJECT_ROOT, folder_name)
         if os.path.isdir(candidate):
             return candidate
@@ -49,7 +48,6 @@ def resolve_folder(folder_name):
             return os.path.abspath(folder_name)
         raise FileNotFoundError(f"Folder not found: {folder_name}")
     
-    # Search all common locations
     candidates = []
     td_candidate = os.path.join(PROJECT_ROOT, "training_data", folder_name)
     if os.path.isdir(td_candidate):
@@ -64,11 +62,19 @@ def resolve_folder(folder_name):
     if len(candidates) == 1:
         return candidates[0]
     elif len(candidates) > 1:
-        print(f"Error: Multiple folders found for '{folder_name}':")
+        print(f"Multiple folders found for '{folder_name}':")
         for idx, c in enumerate(candidates):
             print(f"  [{idx+1}] {c}")
-        print("Please specify the full path to the folder you want to visualize.")
-        exit(1)
+        while True:
+            try:
+                choice = input(f"Select folder [1-{len(candidates)}]: ").strip()
+                choice_idx = int(choice) - 1
+                if 0 <= choice_idx < len(candidates):
+                    return candidates[choice_idx]
+                else:
+                    print("Invalid selection. Try again.")
+            except Exception:
+                print("Invalid input. Enter a number.")
     else:
         raise FileNotFoundError(f"Could not find folder '{folder_name}' in training_data/, data/, or project root.")
 
