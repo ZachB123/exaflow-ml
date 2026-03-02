@@ -26,14 +26,6 @@ class BurgersSolution:
         self.config = self.metadata[CONFIG_KEY]
         self.solver = self.metadata[SOLVER_KEY]
 
-        self.domain_length = (self.solver[NUM_DOMAIN_POINTS_KEY] - 1) * self.solver[SPATIAL_STEP_SIZE_KEY]
-
-        self.spatial_step_size = self.solver[SPATIAL_STEP_SIZE_KEY]
-        self.num_domain_points = self.solver[NUM_DOMAIN_POINTS_KEY]
-        self.time_steps = self.solver[TIME_STEPS_KEY]
-        self.time_step_size = self.solver[TIME_STEP_SIZE_KEY]
-        self.max_time = (self.time_steps - 1) * self.time_step_size
-
         self._cache = {}
 
         try:
@@ -62,6 +54,43 @@ class BurgersSolution:
                 [t[PHASE_SHIFT_KEY] for t in terms], dtype=float
             ),
         }
+
+        # get solution files
+        self.solution_bin_path = os.path.join(self.sample_dir, "solution.bin")
+        self.solution_meta_path = os.path.join(self.sample_dir, "solution_meta.txt")
+        if not os.path.exists(self.solution_bin_path):
+            raise ValueError(f"Binary solution file not found: {self.solution_bin_path}")
+        if not os.path.exists(self.solution_meta_path):
+            raise ValueError(f"Binary solution metadata file not found: {self.solution_meta_path}")
+
+        # Parse solution_meta.txt (key=value per line)
+        solution_meta = {}
+        with open(self.solution_meta_path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                solution_meta[k.strip()] = v.strip()
+
+        self.time_steps = int(solution_meta["num_timesteps"])
+        self.time_step_size = float(solution_meta["dt"])
+        self.max_time = (self.time_steps - 1) * self.time_step_size
+
+        self.spatial_step_size = float(solution_meta["dx"])
+        self.num_domain_points = int(solution_meta["num_domain_points"])
+        self.domain_length = float(self.num_domain_points - 1) * self.spatial_step_size
+
+        # Memory-mapped 2D array; does not load everything into RAM, only time steps as requested
+        self._U = np.memmap(
+            self.solution_bin_path,
+            dtype=np.float64,
+            mode="r",
+            shape=(self.time_steps, self.num_domain_points)
+        )
+
+        # x_array will be the same for all time steps, generate now to return with get_time_step_data()
+        self._x_array = self.spatial_step_size * np.arange(self.num_domain_points)
 
 
     def initial_condition(self, x):
@@ -95,19 +124,12 @@ class BurgersSolution:
                 f"[0, {self.time_steps - 1}]"
             )
 
-        csv_filename = CSV_FILENAME_FORMAT.format(time_step_index)
-        csv_path = os.path.join(self.sample_dir, csv_filename)
+        # Pull u from memmap
+        u_array = self._U[time_step_index, :].copy()
 
-        if not os.path.exists(csv_path):
-            raise FileNotFoundError(f"CSV file not found: {csv_path}")
-
-        df = pd.read_csv(csv_path)
-
-        x_array = df[X_COLUMN].values
-        u_array = df[U_COLUMN].values
-
+        x_array = self._x_array
+        
         self._cache[time_step_index] = (x_array, u_array)
-
         return x_array, u_array
 
 
