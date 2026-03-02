@@ -2,7 +2,33 @@ import json
 import os
 import numpy as np
 import pandas as pd
+from collections import OrderedDict
 from constants import *
+
+
+class LRUCache:
+    def __init__(self, maxsize=128):
+        self.cache = OrderedDict()
+        self.maxsize = maxsize
+
+    def get(self, key):
+        if key not in self.cache:
+            return None
+        self.cache.move_to_end(key)
+        return self.cache[key]
+
+    def set(self, key, value):
+        if key in self.cache:
+            self.cache.move_to_end(key)
+        self.cache[key] = value
+        if len(self.cache) > self.maxsize:
+            self.cache.popitem(last=False)  # evict LRU
+
+    def __contains__(self, key):
+        return key in self.cache
+
+    def clear(self):
+        self.cache.clear()
 
 
 class BurgersSolution:
@@ -34,10 +60,7 @@ class BurgersSolution:
         self.time_step_size = self.solver[TIME_STEP_SIZE_KEY]
         self.max_time = (self.time_steps - 1) * self.time_step_size
 
-
-
-        # not holding entire solution file to memory, but not evicting element; filling in entire dictionary. if i can replace it with some lru lfu cache so that it runs faster
-        self._cache = {}
+        self._cache = LRUCache(maxsize=128)
 
         try:
             bias = float(self.metadata[BIAS_KEY])
@@ -89,8 +112,9 @@ class BurgersSolution:
 
     def get_time_step(self, time_step_index):
 
-        if time_step_index in self._cache:
-            return self._cache[time_step_index]
+        cached = self._cache.get(time_step_index)
+        if cached is not None:
+            return cached
 
         if time_step_index < 0 or time_step_index >= self.time_steps:
             raise ValueError(
@@ -109,7 +133,7 @@ class BurgersSolution:
         x_array = df[X_COLUMN].values
         u_array = df[U_COLUMN].values
 
-        self._cache[time_step_index] = (x_array, u_array)
+        self._cache.set(time_step_index, (x_array, u_array))
 
         return x_array, u_array
 
