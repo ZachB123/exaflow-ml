@@ -16,7 +16,8 @@ const int DEFAULT_NUM_SAMPLES = 5;
 const std::string TRAINING_DIR = "../training_data";
 
 // what scheme we are using for the configuration
-const auto SCHEME_FACTORY = []() {
+const auto SCHEME_FACTORY = []()
+{
     return std::make_unique<Godunov>();
 };
 
@@ -47,7 +48,8 @@ const int WRAP_K_MAX = 20;
 const int WRAP_K_DELTA_MIN = 2;
 const int WRAP_K_DELTA_MAX = 10;
 
-RandomInitialConditionConfig generateRandomInitialConditionConfig(unsigned int seed) {
+RandomInitialConditionConfig generateRandomInitialConditionConfig(unsigned int seed)
+{
     std::mt19937 rng(seed);
 
     std::uniform_int_distribution<int> n_dist(N_MIN, N_MAX);
@@ -80,7 +82,8 @@ RandomInitialConditionConfig generateRandomInitialConditionConfig(unsigned int s
     int wrap_min = wrap_k_dist(rng);
     int wrap_delta = wrap_delta_dist(rng);
     // Clamp if min + delta would exceed the max boundary
-    if (wrap_min + wrap_delta > WRAP_K_MAX) {
+    if (wrap_min + wrap_delta > WRAP_K_MAX)
+    {
         wrap_min = WRAP_K_MAX - wrap_delta;
     }
     cfg.wrap_around_frequency_multiplier_min = wrap_min;
@@ -89,97 +92,133 @@ RandomInitialConditionConfig generateRandomInitialConditionConfig(unsigned int s
     return cfg;
 }
 
-int findNextSampleNumber() {
+int findNextSampleNumber()
+{
     int max_sample = -1;
-    
-    if (!std::filesystem::exists(TRAINING_DIR)) {
+
+    if (!std::filesystem::exists(TRAINING_DIR))
+    {
         return 0;
     }
-    
-    for (const auto& entry : std::filesystem::directory_iterator(TRAINING_DIR)) {
-        if (entry.is_directory()) {
+
+    for (const auto &entry : std::filesystem::directory_iterator(TRAINING_DIR))
+    {
+        if (entry.is_directory())
+        {
             std::string folder_name = entry.path().filename().string();
-            if (folder_name.substr(0, 7) == "sample_") {
-                try {
+            if (folder_name.substr(0, 7) == "sample_")
+            {
+                try
+                {
                     int sample_num = std::stoi(folder_name.substr(7));
                     max_sample = std::max(max_sample, sample_num);
-                } catch (...) {
+                }
+                catch (...)
+                {
                     // ignore folders that don't match the pattern
                 }
             }
         }
     }
-    
+
     return max_sample + 1;
 }
 
-void deleteExistingSamples() {
-    if (std::filesystem::exists(TRAINING_DIR)) {
+void deleteExistingSamples()
+{
+    if (std::filesystem::exists(TRAINING_DIR))
+    {
         std::cout << "Clearing existing training data...\n";
-        for (const auto& entry : std::filesystem::directory_iterator(TRAINING_DIR)) {
-            if (entry.is_directory() && entry.path().filename().string().substr(0, 7) == "sample_") {
+        for (const auto &entry : std::filesystem::directory_iterator(TRAINING_DIR))
+        {
+            if (entry.is_directory() && entry.path().filename().string().substr(0, 7) == "sample_")
+            {
                 std::filesystem::remove_all(entry.path());
             }
         }
     }
 }
 
-void parseCommandLineArguments(int argc, char* argv[], int& num_samples, bool& append_mode, int& time_steps, double& time_step_size, unsigned int &seed) {
-    for (int i = 1; i < argc; ++i) {
+void parseCommandLineArguments(int argc, char *argv[], int &num_samples, bool &append_mode, int &time_steps, double &time_step_size, unsigned int &seed)
+{
+    for (int i = 1; i < argc; ++i)
+    {
         std::string arg = argv[i];
-        
-        if (arg == "--samples" || arg == "-s") {
-            if (i + 1 >= argc) {
+
+        if (arg == "--samples" || arg == "-s")
+        {
+            if (i + 1 >= argc)
+            {
                 std::cerr << "Error: " << arg << " requires a value\n";
                 std::exit(1);
             }
-            try {
+            try
+            {
                 num_samples = std::stoi(argv[++i]);
-            } catch (const std::exception& e) {
+            }
+            catch (const std::exception &e)
+            {
                 std::cerr << "Error: Invalid value for " << arg << ": " << argv[i] << "\n";
                 std::exit(1);
             }
         }
-        else if (arg == "--append" || arg == "-a") {
+        else if (arg == "--append" || arg == "-a")
+        {
             append_mode = true;
         }
-        else if (arg == "--time-step" || arg == "-ts") {
-            if (i + 1 >= argc) {
+        else if (arg == "--time-step" || arg == "-ts")
+        {
+            if (i + 1 >= argc)
+            {
                 std::cerr << "Error: " << arg << " requires a value\n";
                 std::exit(1);
             }
-            try {
+            try
+            {
                 time_step_size = std::stod(argv[++i]);
-            } catch (const std::exception& e) {
+            }
+            catch (const std::exception &e)
+            {
                 std::cerr << "Error: Invalid value for " << arg << ": " << argv[i] << "\n";
                 std::exit(1);
             }
         }
-        else if (arg == "--num-time-steps" || arg == "-nts") {
-            if (i + 1 >= argc) {
+        else if (arg == "--num-time-steps" || arg == "-nts")
+        {
+            if (i + 1 >= argc)
+            {
                 std::cerr << "Error: " << arg << " requires a value\n";
                 std::exit(1);
             }
-            try {
+            try
+            {
                 time_steps = std::stoi(argv[++i]);
-            } catch (const std::exception& e) {
+            }
+            catch (const std::exception &e)
+            {
                 std::cerr << "Error: Invalid value for " << arg << ": " << argv[i] << "\n";
                 std::exit(1);
             }
         }
-        else if (arg == "--seed" || arg == "-sd") {
-            if (i + 1 >= argc) {
+        else if (arg == "--seed" || arg == "-sd")
+        {
+            if (i + 1 >= argc)
+            {
                 std::cerr << "Error: " << arg << " requires a value\n";
                 std::exit(1);
             }
-            try {
+            try
+            {
                 seed = std::stoi(argv[++i]);
-            } catch (const std::exception& e) {
+            }
+            catch (const std::exception &e)
+            {
                 std::cerr << "Error: Invalid value for " << arg << ": " << argv[i] << "\n";
                 std::exit(1);
             }
         }
-        else {
+        else
+        {
             std::cerr << "Error: Unknown argument '" << arg << "'\n";
             std::cerr << "Valid arguments:\n";
             std::cerr << "  --samples, -s <num>          Number of samples to generate\n";
@@ -192,32 +231,37 @@ void parseCommandLineArguments(int argc, char* argv[], int& num_samples, bool& a
     }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[])
+{
 
     int num_samples = DEFAULT_NUM_SAMPLES;
     bool append_mode = false;
     int time_steps = DEFAULT_TIME_STEPS;
     double time_step_size = DEFAULT_TIME_STEP_SIZE;
     unsigned int seed = std::random_device{}();
-    
+
     parseCommandLineArguments(argc, argv, num_samples, append_mode, time_steps, time_step_size, seed);
-    
+
     int start_sample_index = 0;
-    
-    if (append_mode) {
+
+    if (append_mode)
+    {
         start_sample_index = findNextSampleNumber();
         std::cout << "Append mode: starting from sample " << start_sample_index << "\n";
-    } else {
+    }
+    else
+    {
         deleteExistingSamples();
         std::cout << "Starting from sample 0\n";
     }
-    
-    std::cout << "Generating " << num_samples << " samples with " 
+
+    std::cout << "Generating " << num_samples << " samples with "
               << time_steps << " time steps of size " << time_step_size << "\n";
 
     auto total_start = std::chrono::high_resolution_clock::now();
 
-    for (int sample_index = start_sample_index; sample_index < start_sample_index + num_samples; ++sample_index) {
+    for (int sample_index = start_sample_index; sample_index < start_sample_index + num_samples; ++sample_index)
+    {
         // make sure each sample is different, but if we do seperate runs with same seed we can get same functions
         unsigned int current_seed = seed + (sample_index - start_sample_index);
 
@@ -235,8 +279,7 @@ int main(int argc, char* argv[]) {
         BurgersSolver1d solver(
             SCHEME_FACTORY(),
             solver_cfg,
-            f
-        );
+            f);
 
         solver.solve();
         std::cout << "random function was nan detected: " << solver.wasNanDetected() << std::endl;
@@ -246,16 +289,16 @@ int main(int argc, char* argv[]) {
 
         solver.saveSolution(TRAINING_DIR, folder_name.str(), 1);
         f.saveMetadataJSON(TRAINING_DIR, folder_name.str(),
-                          time_steps, time_step_size,
-                          solver.getNumDomainPoints(),
-                          solver.getSpatialStepSize(),
-                          solver.getSchemeName());
+                           time_steps, time_step_size,
+                           solver.getNumDomainPoints(),
+                           solver.getSpatialStepSize(),
+                           solver.getSchemeName());
 
         auto sample_end = std::chrono::high_resolution_clock::now();
         auto sample_duration = std::chrono::duration_cast<std::chrono::milliseconds>(sample_end - sample_start);
 
         std::cout << "Generated sample " << sample_index << " in "
-                  << TRAINING_DIR << "/" << folder_name.str() 
+                  << TRAINING_DIR << "/" << folder_name.str()
                   << " (took " << sample_duration.count() / 1000.0 << "s)\n";
     }
 
