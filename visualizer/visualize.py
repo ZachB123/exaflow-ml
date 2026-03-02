@@ -132,26 +132,41 @@ def run_visualizer(folder_name, initial_speed):
         fig.canvas.draw_idle()
 
 
+
+    def reset(event):
+        nonlocal frame_pos, frame_idx, playing
+        playing = False
+        play_button.label.set_text("Play")
+        frame_pos = 0.0
+        frame_idx = 0
+        update_plot()
+        fig.canvas.draw_idle()
+
+
+
     # slider: speed override
     def change_speed(val):
         nonlocal speed
         speed = float(val)
 
     # --- UI Layout ---
-    axprev = plt.axes([0.1, 0.1, 0.1, 0.075])
-    axplay = plt.axes([0.25, 0.1, 0.15, 0.075])
-    axnext = plt.axes([0.45, 0.1, 0.1, 0.075])
-    axspeed = plt.axes([0.65, 0.1, 0.25, 0.05])
+    axprev  = plt.axes([0.1, 0.1, 0.1, 0.075])
+    axplay  = plt.axes([0.23, 0.1, 0.15, 0.075])
+    axreset = plt.axes([0.40, 0.1, 0.12, 0.075])
+    axnext  = plt.axes([0.55, 0.1, 0.1, 0.075])
+    axspeed = plt.axes([0.70, 0.1, 0.25, 0.05])
 
-    prev_button = widgets.Button(axprev, "Prev")
-    play_button = widgets.Button(axplay, "Play")
-    next_button = widgets.Button(axnext, "Next")
+    prev_button  = widgets.Button(axprev, "Prev")
+    play_button  = widgets.Button(axplay, "Play")
+    reset_button = widgets.Button(axreset, "Reset")
+    next_button  = widgets.Button(axnext, "Next")
     speed_slider = widgets.Slider(axspeed, "Speed", 0.1, 50.0, valinit=speed)
 
     prev_button.on_clicked(prev_frame)
     next_button.on_clicked(next_frame)
     play_button.on_clicked(play_pause)
     speed_slider.on_changed(change_speed)
+    reset_button.on_clicked(reset)
 
     timer = fig.canvas.new_timer(interval=30)  # milliseconds
 

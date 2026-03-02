@@ -34,6 +34,9 @@ class BurgersSolution:
         self.time_step_size = self.solver[TIME_STEP_SIZE_KEY]
         self.max_time = (self.time_steps - 1) * self.time_step_size
 
+
+
+        # not holding entire solution file to memory, but not evicting element; filling in entire dictionary. if i can replace it with some lru lfu cache so that it runs faster
         self._cache = {}
 
         try:
