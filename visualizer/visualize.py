@@ -11,24 +11,59 @@ PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
 def load_frames(data_dir):
     """
-    Loads all timestep_XXXXX.csv files inside data_dir.
+    Loads solution.bin + solution_meta.txt inside data_dir.
+
     Returns:
         x: np.array of shape (N,)
         frames: list of np.array, each shape (N,)
+        files: list of strings (synthetic file names like timestep_00000.csv)
+               so downstream code doesn't have to change for now.
     """
-    files = sorted(glob.glob(os.path.join(data_dir, "timestep_*.csv")))
+    bin_path = os.path.join(data_dir, "solution.bin")
+    meta_path = os.path.join(data_dir, "solution_meta.txt")
 
-    if not files:
-        raise ValueError(f"No timestep_*.csv files found in {data_dir}")
+    if not os.path.exists(bin_path):
+        raise ValueError(f"Binary file not found in {data_dir}: solution.bin")
 
-    frames = []
-    x = None
+    if not os.path.exists(meta_path):
+        raise ValueError(f"Metadata file not found in {data_dir}: solution_meta.txt")
 
-    for f in files:
-        data = np.loadtxt(f, delimiter=",", skiprows=1)
-        if x is None:
-            x = data[:, 0]
-        frames.append(data[:, 1])
+    # Parse metadata (key=value lines)
+    meta = {}
+    with open(meta_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            meta[key.strip()] = value.strip()
+
+    num_domain_points = int(meta["num_domain_points"])
+    num_timesteps = int(meta["num_timesteps"])
+    dx = float(meta["dx"])
+    gap = int(meta["gap"])
+
+    # Load binary data
+    data = np.fromfile(bin_path, dtype=np.float64)
+
+    expected = num_domain_points * num_timesteps
+    if data.size != expected:
+        raise ValueError(
+            f"Binary size mismatch for {bin_path}. "
+            f"Expected {expected} float64 values (num_timesteps={num_timesteps}, num_domain_points={num_domain_points}), got {data.size}."
+        )
+
+    U = data.reshape((num_timesteps, num_domain_points))  # row-major: U[frame_idx, x_idx]
+
+    # Reconstruct x grid
+    x = dx * np.arange(num_domain_points)
+
+    # To keep downstream unchangedfor now, return frames as a list of 1D arrays
+    # (These are views into U; if you need independent arrays, use .copy())
+    frames = [U[i, :] for i in range(num_timesteps)]
+
+    # To keep downstream unchanged for now, return list of fake csv file names.
+    files = [f"timestep_{(i * gap):05d}.csv" for i in range(num_timesteps)]
 
     return x, frames, files
 
