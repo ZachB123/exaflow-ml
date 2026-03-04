@@ -56,33 +56,27 @@ class BurgersSolution:
         }
 
         # get solution files
-        self.solution_bin_path = os.path.join(self.sample_dir, "solution.bin")
-        self.solution_meta_path = os.path.join(self.sample_dir, "solution_meta.txt")
+        self.solution_bin_path = os.path.join(self.sample_dir, SOLUTION_DATA_FILENAME)
+        self.solution_meta_path = os.path.join(self.sample_dir, SOLUTION_METADATA_FILENAME)
         if not os.path.exists(self.solution_bin_path):
             raise ValueError(f"Binary solution file not found: {self.solution_bin_path}")
         if not os.path.exists(self.solution_meta_path):
             raise ValueError(f"Binary solution metadata file not found: {self.solution_meta_path}")
 
-        # Parse solution_meta.txt (key=value per line)
-        solution_meta = {}
+        # Parse solution metadata (JSON)
         with open(self.solution_meta_path, "r") as f:
-            for line in f:
-                line = line.strip()
-                if not line or "=" not in line:
-                    continue
-                k, v = line.split("=", 1)
-                solution_meta[k.strip()] = v.strip()
+            meta = json.load(f)
 
-        self.time_steps = int(solution_meta["num_timesteps"])
-        self.time_step_size = float(solution_meta["dt"])
+        self.time_steps = int(meta["num_timesteps"])
+        self.time_step_size = float(meta["dt"])
         self.max_time = (self.time_steps - 1) * self.time_step_size
 
-        self.spatial_step_size = float(solution_meta["dx"])
-        self.num_domain_points = int(solution_meta["num_domain_points"])
+        self.spatial_step_size = float(meta["dx"])
+        self.num_domain_points = int(meta["num_domain_points"])
         self.domain_length = float(self.num_domain_points - 1) * self.spatial_step_size
 
         # Memory-mapped 2D array; does not load everything into RAM, only time steps as requested
-        self._U = np.memmap(
+        self._u = np.memmap(
             self.solution_bin_path,
             dtype=np.float64,
             mode="r",
@@ -125,7 +119,7 @@ class BurgersSolution:
             )
 
         # Pull u from memmap
-        u_array = self._U[time_step_index, :].copy()
+        u_array = self._u[time_step_index, :].copy() # lowercase u
 
         x_array = self._x_array
         

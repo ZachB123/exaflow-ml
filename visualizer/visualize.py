@@ -5,6 +5,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.widgets as widgets
+import json
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
@@ -20,7 +21,7 @@ def load_frames(data_dir):
                so downstream code doesn't have to change for now.
     """
     bin_path = os.path.join(data_dir, "solution.bin")
-    meta_path = os.path.join(data_dir, "solution_meta.txt")
+    meta_path = os.path.join(data_dir, "solution_meta.json")
 
     if not os.path.exists(bin_path):
         raise ValueError(f"Binary file not found in {data_dir}: solution.bin")
@@ -28,15 +29,9 @@ def load_frames(data_dir):
     if not os.path.exists(meta_path):
         raise ValueError(f"Metadata file not found in {data_dir}: solution_meta.txt")
 
-    # Parse metadata (key=value lines)
-    meta = {}
+    # Parse solution metadata (JSON)
     with open(meta_path, "r") as f:
-        for line in f:
-            line = line.strip()
-            if not line or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            meta[key.strip()] = value.strip()
+        meta = json.load(f)
 
     num_domain_points = int(meta["num_domain_points"])
     num_timesteps = int(meta["num_timesteps"])
@@ -53,7 +48,7 @@ def load_frames(data_dir):
             f"Expected {expected} float64 values (num_timesteps={num_timesteps}, num_domain_points={num_domain_points}), got {data.size}."
         )
 
-    U = data.reshape((num_timesteps, num_domain_points))  # row-major: U[frame_idx, x_idx]
+    U = data.reshape((num_timesteps, num_domain_points))
 
     # Reconstruct x grid
     x = dx * np.arange(num_domain_points)
