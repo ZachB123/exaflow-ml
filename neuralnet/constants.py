@@ -6,9 +6,8 @@ REPO_ROOT = FILE_DIR.parent
 DEFAULT_TRAINING_DATA_DIR = REPO_ROOT / "training_data"
 
 SOLUTION_DATA_FILENAME = "solution.bin"
-SOLUTION_METADATA_FILENAME = "solution_meta.json"
-
 METADATA_FILENAME = "metadata.json"
+
 CSV_FILENAME_FORMAT = "timestep_{:05d}.csv"
 
 CONFIG_KEY = "config"

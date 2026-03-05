@@ -170,8 +170,8 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
     file.close();
     std::cout << "Binary file written successfully.\n";
 
-    // Create metadata text file
-    std::string meta_filename = run_folder + "/solution_meta.json";
+    // Create metadata JSON file
+    std::string meta_filename = run_folder + "/metadata.json";
     std::ofstream meta_file(meta_filename);
 
     if (!meta_file.is_open()) {
@@ -181,14 +181,16 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
     }
 
     meta_file << "{\n";
-    meta_file << "  \"num_domain_points\": " << most_recent_num_domain_points << ",\n";
-    meta_file << "  \"num_timesteps\": " << written_timesteps << ",\n";
-    meta_file << "  \"dx\": " << most_recent_spatial_step_size << ",\n";
-    meta_file << "  \"dt\": " << time_step_size << ",\n";
-    meta_file << "  \"gap\": " << gap << ",\n";
-    meta_file << "  \"domain_length\": " << domain_length << ",\n";
-    meta_file << "  \"kinematic_viscosity\": " << kinematic_viscosity << ",\n";
-    meta_file << "  \"scheme\": \"" << scheme->getName() << "\"\n";
+    meta_file << "  \"solver\": {\n";
+    meta_file << "    \"time_steps\": " << written_timesteps << ",\n";
+    meta_file << "    \"time_step_size\": " << time_step_size << ",\n";
+    meta_file << "    \"num_domain_points\": " << most_recent_num_domain_points << ",\n";
+    meta_file << "    \"spatial_step_size\": " << most_recent_spatial_step_size << ",\n";
+    meta_file << "    \"domain_length\": " << domain_length << ",\n";
+    meta_file << "    \"kinematic_viscosity\": " << kinematic_viscosity << ",\n";
+    meta_file << "    \"scheme_name\": \"" << scheme->getName() << "\",\n";
+    meta_file << "    \"gap\": " << gap << "\n";
+    meta_file << "  }\n";
     meta_file << "}\n";
 
     meta_file.close();

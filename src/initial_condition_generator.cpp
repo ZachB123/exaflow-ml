@@ -59,66 +59,80 @@ double RandomInitialCondition::operator()(double x) const {
     return sum;
 }
 
-
 void RandomInitialCondition::saveMetadataJSON(const std::filesystem::path& base_path,
-                                              const std::filesystem::path& sample_folder,
-                                              int time_steps,
-                                              double time_step_size,
-                                              int num_domain_points,
-                                              double spatial_step_size,
-                                              const std::string& scheme_name) const
+    const std::filesystem::path& sample_folder,
+    int /*time_steps*/,
+    double /*time_step_size*/,
+    int /*num_domain_points*/,
+    double /*spatial_step_size*/,
+    const std::string& /*scheme_name*/) const
 {
-    std::filesystem::path folder = base_path / sample_folder;
+    std::filesystem::path filepath = (base_path / sample_folder) / "metadata.json";
 
-    // Create directory tree if not exists
-    std::filesystem::create_directories(folder);
+    // Read existing solver metadata
+    std::ifstream in(filepath);
+    if (!in) {
+        std::cerr << "Failed to open solver metadata for reading: " << filepath << "\n";
+        return;
+    }
+    std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 
-    std::filesystem::path filepath = folder / "metadata.json";
-
-    std::ofstream file(filepath);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open metadata file: " << filepath << std::endl;
+    // Find last non-whitespace char and ensure it's a closing brace
+    auto is_whitespace = [](unsigned char c) { return std::isspace(c) != 0; };// helper function to check for whitespace
+    size_t end = content.size();
+    while (end > 0 && is_whitespace(static_cast<unsigned char>(content[end - 1]))) --end;
+    if (end == 0 || content[end - 1] != '}') {
+        std::cerr << "Invalid solver metadata JSON (missing closing '}'): " << filepath << "\n";
         return;
     }
 
-    file << std::setprecision(std::numeric_limits<double>::max_digits10);
+    // Skip if data already appended
+    if (content.find("\"config\"") != std::string::npos ||
+        content.find("\"terms\"") != std::string::npos ||
+        content.find("\"bias\"") != std::string::npos) {
+        std::cerr << "IC metadata already present. Skipping: " << filepath << "\n";
+        return;
+    }
 
-    file << "{\n";
-    file << "  \"config\": {\n";
-    file << "    \"n\": " << config.n << ",\n";
-    file << "    \"domain_length\": " << config.domain_length << ",\n";
-    file << "    \"amp_min\": " << config.amp_min << ",\n";
-    file << "    \"amp_max\": " << config.amp_max << ",\n";
-    file << "    \"frequency_multiplier_min\": " << config.frequency_multiplier_min << ",\n";
-    file << "    \"frequency_multiplier_max\": " << config.frequency_multiplier_max << ",\n";
-    file << "    \"wrap_around_frequency_multiplier_min\": " << config.wrap_around_frequency_multiplier_min << ",\n";
-    file << "    \"wrap_around_frequency_multiplier_max\": " << config.wrap_around_frequency_multiplier_max << "\n";
-    file << "  },\n\n";
+    // Remove final '}' and trailing whitespace before it
+    content.erase(end - 1);
+    while (!content.empty() && is_whitespace(static_cast<unsigned char>(content.back()))) content.pop_back();
 
-    file << "  \"terms\": [\n";
+    // Build the append fragment
+    std::ostringstream a;
+    a << std::setprecision(std::numeric_limits<double>::max_digits10);
+
+    a << ",\n\n" << "  \"config\": {\n";
+    a << "    \"n\": " << config.n << ",\n";
+    a << "    \"domain_length\": " << config.domain_length << ",\n";
+    a << "    \"amp_min\": " << config.amp_min << ",\n";
+    a << "    \"amp_max\": " << config.amp_max << ",\n";
+    a << "    \"frequency_multiplier_min\": " << config.frequency_multiplier_min << ",\n";
+    a << "    \"frequency_multiplier_max\": " << config.frequency_multiplier_max << ",\n";
+    a << "    \"wrap_around_frequency_multiplier_min\": " << config.wrap_around_frequency_multiplier_min << ",\n";
+    a << "    \"wrap_around_frequency_multiplier_max\": " << config.wrap_around_frequency_multiplier_max << "\n";
+    a << "  },\n\n";
+
+    a << "  \"terms\": [\n";
     for (size_t i = 0; i < terms.size(); ++i) {
         const auto& t = terms[i];
-        file << "    {\n";
-        file << "      \"amplitude\": " << t.amplitude << ",\n";
-        file << "      \"frequency\": " << t.frequency << ",\n";
-        file << "      \"phase_shift\": " << t.phase_shift << "\n";
-        if (i + 1 < terms.size())
-            file << "    },\n";
-        else
-            file << "    }\n";
+        a << "    {\n";
+        a << "      \"amplitude\": " << t.amplitude << ",\n";
+        a << "      \"frequency\": " << t.frequency << ",\n";
+        a << "      \"phase_shift\": " << t.phase_shift << "\n";
+        a << "    }" << (i + 1 < terms.size() ? "," : "") << "\n";
     }
-    file << "  ],\n\n";
+    a << "  ],\n\n"
+        << "  \"bias\": " << bias << "\n"
+        << "}\n";
 
-    file << "  \"bias\": " << bias << ",\n\n";
-
-    file << "  \"solver\": {\n";
-    file << "    \"time_steps\": " << time_steps << ",\n";
-    file << "    \"time_step_size\": " << time_step_size << ",\n";
-    file << "    \"num_domain_points\": " << num_domain_points << ",\n";
-    file << "    \"spatial_step_size\": " << spatial_step_size << ",\n";
-    file << "    \"scheme_name\": \"" << scheme_name << "\"\n";
-    file << "  }\n";
-    file << "}\n";
+    // Write merged JSON back
+    std::ofstream out(filepath, std::ios::trunc);
+    if (!out) {
+        std::cerr << "Failed to open solver metadata for writing: " << filepath << "\n";
+        return;
+    }
+    out << content << a.str();
 }
 
 std::string RandomInitialCondition::toString() const {

@@ -21,22 +21,22 @@ def load_frames(data_dir):
                so downstream code doesn't have to change for now.
     """
     bin_path = os.path.join(data_dir, "solution.bin")
-    meta_path = os.path.join(data_dir, "solution_meta.json")
+    meta_path = os.path.join(data_dir, "metadata.json")
 
     if not os.path.exists(bin_path):
         raise ValueError(f"Binary file not found in {data_dir}: solution.bin")
 
     if not os.path.exists(meta_path):
-        raise ValueError(f"Metadata file not found in {data_dir}: solution_meta.txt")
+        raise ValueError(f"Metadata file not found in {data_dir}: metadata.json")
 
     # Parse solution metadata (JSON)
     with open(meta_path, "r") as f:
         meta = json.load(f)
 
-    num_domain_points = int(meta["num_domain_points"])
-    num_timesteps = int(meta["num_timesteps"])
-    dx = float(meta["dx"])
-    gap = int(meta["gap"])
+    num_domain_points = int(meta["solver"]["num_domain_points"])
+    num_timesteps = int(meta["solver"]["time_steps"])
+    dx = float(meta["solver"]["spatial_step_size"])
+    gap = int(meta["solver"]["gap"])
 
     # Load binary data
     data = np.fromfile(bin_path, dtype=np.float64)

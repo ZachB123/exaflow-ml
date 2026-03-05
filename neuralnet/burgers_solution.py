@@ -57,7 +57,7 @@ class BurgersSolution:
 
         # get solution files
         self.solution_bin_path = os.path.join(self.sample_dir, SOLUTION_DATA_FILENAME)
-        self.solution_meta_path = os.path.join(self.sample_dir, SOLUTION_METADATA_FILENAME)
+        self.solution_meta_path = os.path.join(self.sample_dir, METADATA_FILENAME)
         if not os.path.exists(self.solution_bin_path):
             raise ValueError(f"Binary solution file not found: {self.solution_bin_path}")
         if not os.path.exists(self.solution_meta_path):
@@ -67,12 +67,12 @@ class BurgersSolution:
         with open(self.solution_meta_path, "r") as f:
             meta = json.load(f)
 
-        self.time_steps = int(meta["num_timesteps"])
-        self.time_step_size = float(meta["dt"])
+        self.time_steps = int(meta["solver"]["time_steps"])
+        self.time_step_size = float(meta["solver"]["time_step_size"])
         self.max_time = (self.time_steps - 1) * self.time_step_size
 
-        self.spatial_step_size = float(meta["dx"])
-        self.num_domain_points = int(meta["num_domain_points"])
+        self.spatial_step_size = float(meta["solver"]["spatial_step_size"])
+        self.num_domain_points = int(meta["solver"]["num_domain_points"])
         self.domain_length = float(self.num_domain_points - 1) * self.spatial_step_size
 
         # Memory-mapped 2D array; does not load everything into RAM, only time steps as requested
