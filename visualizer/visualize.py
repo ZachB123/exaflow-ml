@@ -12,7 +12,7 @@ PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
 def load_frames(data_dir):
     """
-    Loads solution.bin + solution_meta.txt inside data_dir.
+    Loads solution.bin + metadata.json inside data_dir.
 
     Returns:
         x: np.array of shape (N,)
@@ -20,6 +20,8 @@ def load_frames(data_dir):
         files: list of strings (synthetic file names like timestep_00000.csv)
                so downstream code doesn't have to change for now.
     """
+
+    # Get solution data and metadata files
     bin_path = os.path.join(data_dir, "solution.bin")
     meta_path = os.path.join(data_dir, "metadata.json")
 
@@ -48,14 +50,14 @@ def load_frames(data_dir):
             f"Expected {expected} float64 values (num_timesteps={num_timesteps}, num_domain_points={num_domain_points}), got {data.size}."
         )
 
-    U = data.reshape((num_timesteps, num_domain_points))
+    u = data.reshape((num_timesteps, num_domain_points))
 
     # Reconstruct x grid
     x = dx * np.arange(num_domain_points)
 
     # To keep downstream unchangedfor now, return frames as a list of 1D arrays
-    # (These are views into U; if you need independent arrays, use .copy())
-    frames = [U[i, :] for i in range(num_timesteps)]
+    # (These are views into u; if you need independent arrays, use .copy())
+    frames = [u[i, :] for i in range(num_timesteps)]
 
     # To keep downstream unchanged for now, return list of fake csv file names.
     files = [f"timestep_{(i * gap):05d}.csv" for i in range(num_timesteps)]

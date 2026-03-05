@@ -15,18 +15,22 @@ class BurgersSolution:
         if not os.path.exists(self.sample_dir):
             raise ValueError(f"Sample directory does not exist: {self.sample_dir}")
 
-        metadata_path = os.path.join(self.sample_dir, METADATA_FILENAME)
+        self._cache = {}
 
-        if not os.path.exists(metadata_path):
-            raise ValueError(f"Metadata file not found: {metadata_path}")
+        # get solution files
+        self.solution_bin_path = os.path.join(self.sample_dir, SOLUTION_DATA_FILENAME)
+        self.metadata_path = os.path.join(self.sample_dir, METADATA_FILENAME)
+        if not os.path.exists(self.solution_bin_path):
+            raise ValueError(f"Binary solution file not found: {self.solution_bin_path}")
+        if not os.path.exists(self.metadata_path):
+            raise ValueError(f"Binary solution metadata file not found: {self.metadata_path}")
 
-        with open(metadata_path, 'r') as f:
+        # Parse solution metadata (JSON)
+        with open(self.metadata_path, "r") as f:
             self.metadata = json.load(f)
 
         self.config = self.metadata[CONFIG_KEY]
         self.solver = self.metadata[SOLVER_KEY]
-
-        self._cache = {}
 
         try:
             bias = float(self.metadata[BIAS_KEY])
@@ -55,24 +59,12 @@ class BurgersSolution:
             ),
         }
 
-        # get solution files
-        self.solution_bin_path = os.path.join(self.sample_dir, SOLUTION_DATA_FILENAME)
-        self.solution_meta_path = os.path.join(self.sample_dir, METADATA_FILENAME)
-        if not os.path.exists(self.solution_bin_path):
-            raise ValueError(f"Binary solution file not found: {self.solution_bin_path}")
-        if not os.path.exists(self.solution_meta_path):
-            raise ValueError(f"Binary solution metadata file not found: {self.solution_meta_path}")
-
-        # Parse solution metadata (JSON)
-        with open(self.solution_meta_path, "r") as f:
-            meta = json.load(f)
-
-        self.time_steps = int(meta["solver"]["time_steps"])
-        self.time_step_size = float(meta["solver"]["time_step_size"])
+        self.time_steps = int(self.metadata["solver"]["time_steps"])
+        self.time_step_size = float(self.metadata["solver"]["time_step_size"])
         self.max_time = (self.time_steps - 1) * self.time_step_size
 
-        self.spatial_step_size = float(meta["solver"]["spatial_step_size"])
-        self.num_domain_points = int(meta["solver"]["num_domain_points"])
+        self.spatial_step_size = float(self.metadata["solver"]["spatial_step_size"])
+        self.num_domain_points = int(self.metadata["solver"]["num_domain_points"])
         self.domain_length = float(self.num_domain_points - 1) * self.spatial_step_size
 
         # Memory-mapped 2D array; does not load everything into RAM, only time steps as requested
@@ -108,10 +100,12 @@ class BurgersSolution:
 
 
     def get_time_step(self, time_step_index):
-
+        
+        # Check cache first
         if time_step_index in self._cache:
             return self._cache[time_step_index]
 
+        # Check bounds
         if time_step_index < 0 or time_step_index >= self.time_steps:
             raise ValueError(
                 f"Time step index {time_step_index} out of bounds "
@@ -119,7 +113,7 @@ class BurgersSolution:
             )
 
         # Pull u from memmap
-        u_array = self._u[time_step_index, :].copy() # lowercase u
+        u_array = self._u[time_step_index, :].copy()
 
         x_array = self._x_array
         

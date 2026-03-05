@@ -245,11 +245,7 @@ int main(int argc, char* argv[]) {
         folder_name << "sample_" << std::setw(6) << std::setfill('0') << sample_index;
 
         solver.saveSolution(TRAINING_DIR, folder_name.str(), 1);
-        f.saveMetadataJSON(TRAINING_DIR, folder_name.str(),
-                          time_steps, time_step_size,
-                          solver.getNumDomainPoints(),
-                          solver.getSpatialStepSize(),
-                          solver.getSchemeName());
+        f.saveMetadataJSON(TRAINING_DIR, folder_name.str());
 
         auto sample_end = std::chrono::high_resolution_clock::now();
         auto sample_duration = std::chrono::duration_cast<std::chrono::milliseconds>(sample_end - sample_start);

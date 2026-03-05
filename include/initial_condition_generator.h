@@ -36,12 +36,7 @@ public:
     double operator()(double x) const;
 
     void saveMetadataJSON(const std::filesystem::path& base_path,
-                      const std::filesystem::path& sample_folder,
-                      int time_steps,
-                      double time_step_size,
-                      int num_domain_points,
-                      double spatial_step_size,
-                      const std::string& scheme_name) const;
+                      const std::filesystem::path& sample_folder) const;
 
 
     std::string toString() const;
