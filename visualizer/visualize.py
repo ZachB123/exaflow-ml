@@ -38,7 +38,6 @@ def load_frames(data_dir):
     num_domain_points = int(meta["solver"]["num_domain_points"])
     num_timesteps = int(meta["solver"]["time_steps"])
     dx = float(meta["solver"]["spatial_step_size"])
-    gap = int(meta["solver"]["gap"])
 
     # Load binary data
     data = np.fromfile(bin_path, dtype=np.float64)
@@ -60,7 +59,7 @@ def load_frames(data_dir):
     frames = [u[i, :] for i in range(num_timesteps)]
 
     # To keep downstream unchanged for now, return list of fake csv file names.
-    files = [f"timestep_{(i * gap):05d}.csv" for i in range(num_timesteps)]
+    files = [f"timestep_{i:05d}.csv" for i in range(num_timesteps)]
 
     return x, frames, files
 

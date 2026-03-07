@@ -244,7 +244,7 @@ int main(int argc, char* argv[]) {
         std::ostringstream folder_name;
         folder_name << "sample_" << std::setw(6) << std::setfill('0') << sample_index;
 
-        solver.saveSolution(TRAINING_DIR, folder_name.str(), 1);
+        solver.saveSolution(TRAINING_DIR, folder_name.str());
         f.saveMetadataJSON(TRAINING_DIR, folder_name.str());
 
         auto sample_end = std::chrono::high_resolution_clock::now();

@@ -6,3 +6,4 @@ training_data/
 .DS_Store
 *.dat
 __pycache__/
+.claude/

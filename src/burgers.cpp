@@ -118,14 +118,10 @@ std::vector<std::vector<double>> BurgersSolver1d::getSolution() const {
     return solution_history;
 }
 
-void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::string& run_name, int gap) const {
+void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::string& run_name) const {
 
     if (!std::filesystem::exists(base_folder)) {
         std::filesystem::create_directory(base_folder);
-    }
-
-    if (gap <= 0) {
-        throw std::invalid_argument("gap must be > 0");
     }
 
     // Create (or recreate) run folder
@@ -147,13 +143,7 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
     std::cout << "Writing binary solution to: " << filename << std::endl;
 
 	// Add solution data to binary file, writing one timestep at a time
-    size_t written_timesteps = 0; // used for metadata file
     for (size_t t = 0; t < solution_history.size(); ++t) {
-
-        if (t % gap != 0) {
-            continue;
-        }
-		written_timesteps++;
 
         const auto& u_t = solution_history[t];
 
@@ -182,14 +172,13 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
 
     meta_file << "{\n";
     meta_file << "  \"solver\": {\n";
-    meta_file << "    \"time_steps\": " << written_timesteps << ",\n";
+    meta_file << "    \"time_steps\": " << solution_history.size() << ",\n";
     meta_file << "    \"time_step_size\": " << time_step_size << ",\n";
     meta_file << "    \"num_domain_points\": " << most_recent_num_domain_points << ",\n";
     meta_file << "    \"spatial_step_size\": " << most_recent_spatial_step_size << ",\n";
     meta_file << "    \"domain_length\": " << domain_length << ",\n";
     meta_file << "    \"kinematic_viscosity\": " << kinematic_viscosity << ",\n";
-    meta_file << "    \"scheme_name\": \"" << scheme->getName() << "\",\n";
-    meta_file << "    \"gap\": " << gap << "\n";
+    meta_file << "    \"scheme_name\": \"" << scheme->getName() << "\"\n";
     meta_file << "  }\n";
     meta_file << "}\n";
 

@@ -33,7 +33,7 @@ int main() {
         step_function);
 
     step_function_solver.solve();
-    step_function_solver.saveSolution("../data", "step_function", 1);
+    step_function_solver.saveSolution("../data", "step_function");
     std::cout << "step function was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
     SolverConfig sine_wave_config = {
@@ -54,7 +54,7 @@ int main() {
         sine_function);
 
     solver.solve();
-    solver.saveSolution("../data", "sine_wave", 1);
+    solver.saveSolution("../data", "sine_wave");
     std::cout << "sine wave was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
     
@@ -75,7 +75,7 @@ int main() {
         f);
 
     random_function_solver.solve();
-    random_function_solver.saveSolution("../data", "random_function", 1);
+    random_function_solver.saveSolution("../data", "random_function");
     std::cout << "random function was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
 }
