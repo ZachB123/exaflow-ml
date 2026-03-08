@@ -56,7 +56,7 @@ def resolve_folder(folder_name):
         for idx, c in enumerate(candidates):
             print(f"  [{idx+1}] {c}")
         print("Please specify the full path to the folder you want to visualize.")
-        exit(1)
+        return None
     else:
         raise FileNotFoundError(f"Could not find folder '{folder_name}' in any of: {', '.join(search_dirs)}.")
 
@@ -213,7 +213,7 @@ def main():
     parser.add_argument(
         "folder",
         type=str,
-        help="Sample name (e.g. sample_000000) or folder path. Searches training_data/, data/, and project root.",
+        help="Sample name (e.g. sample_000000) or folder path. Searches training_data/ and data/",
     )
     parser.add_argument(
         "--speed",
