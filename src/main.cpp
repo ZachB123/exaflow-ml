@@ -7,6 +7,7 @@
 #include "burgers.h"
 #include "burger_scheme.h"
 #include "initial_condition_generator.h"
+#include "metadata_writer.h"
 
 int main() {
 
@@ -33,7 +34,8 @@ int main() {
         step_function);
 
     step_function_solver.solve();
-    step_function_solver.saveSolution("../data", "step_function");
+    step_function_solver.saveBinarySolution("../data", "step_function");
+    MetadataWriter(step_function_solver).write("../data/step_function/metadata.json");
     std::cout << "step function was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
     SolverConfig sine_wave_config = {
@@ -54,7 +56,8 @@ int main() {
         sine_function);
 
     solver.solve();
-    solver.saveSolution("../data", "sine_wave");
+    solver.saveBinarySolution("../data", "sine_wave");
+    MetadataWriter(solver).write("../data/sine_wave/metadata.json");
     std::cout << "sine wave was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
     
@@ -75,7 +78,8 @@ int main() {
         f);
 
     random_function_solver.solve();
-    random_function_solver.saveSolution("../data", "random_function");
+    random_function_solver.saveBinarySolution("../data", "random_function");
+    MetadataWriter(random_function_solver, f).write("../data/random_function/metadata.json");
     std::cout << "random function was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
 }

@@ -118,7 +118,7 @@ std::vector<std::vector<double>> BurgersSolver1d::getSolution() const {
     return solution_history;
 }
 
-void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::string& run_name) const {
+void BurgersSolver1d::saveBinarySolution(const std::string& base_folder, const std::string& run_name) const {
 
     if (!std::filesystem::exists(base_folder)) {
         std::filesystem::create_directory(base_folder);
@@ -145,7 +145,7 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
 	// Add solution data to binary file, writing one timestep at a time
     for (size_t t = 0; t < solution_history.size(); ++t) {
 
-        const auto& u_t = solution_history[t];
+        const std::vector<double>& u_t = solution_history[t];
 
         file.write(
             reinterpret_cast<const char*>(u_t.data()),
@@ -158,33 +158,20 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
         }
     }
     file.close();
-    std::cout << "Binary file written successfully.\n";
+    std::cout << "Binary solution written successfully.\n";
 
-    // Create metadata JSON file
-    std::string meta_filename = run_folder + "/metadata.json";
-    std::ofstream meta_file(meta_filename);
+}
 
-    if (!meta_file.is_open()) {
-        std::cerr << "Failed to open metadata file: "
-            << meta_filename << std::endl;
-        return;
-    }
-
-    meta_file << "{\n";
-    meta_file << "  \"solver\": {\n";
-    meta_file << "    \"time_steps\": " << solution_history.size() << ",\n";
-    meta_file << "    \"time_step_size\": " << time_step_size << ",\n";
-    meta_file << "    \"num_domain_points\": " << most_recent_num_domain_points << ",\n";
-    meta_file << "    \"spatial_step_size\": " << most_recent_spatial_step_size << ",\n";
-    meta_file << "    \"domain_length\": " << domain_length << ",\n";
-    meta_file << "    \"kinematic_viscosity\": " << kinematic_viscosity << ",\n";
-    meta_file << "    \"scheme_name\": \"" << scheme->getName() << "\"\n";
-    meta_file << "  }\n";
-    meta_file << "}\n";
-
-    meta_file.close();
-    std::cout << "Metadata JSON file written successfully.\n";
-
+void BurgersSolver1d::appendMetadata(nlohmann::json& metadata) const {
+    metadata["solver"] = {
+        {"time_steps", solution_history.size()},
+        {"time_step_size", time_step_size},
+        {"num_domain_points", most_recent_num_domain_points},
+        {"spatial_step_size", most_recent_spatial_step_size},
+        {"domain_length", domain_length},
+        {"kinematic_viscosity", kinematic_viscosity},
+        {"scheme_name", scheme->getName()}
+    };
 }
 
 bool BurgersSolver1d::wasNanDetected() const {

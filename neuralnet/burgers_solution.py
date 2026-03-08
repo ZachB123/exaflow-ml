@@ -59,12 +59,12 @@ class BurgersSolution:
             ),
         }
 
-        self.time_steps = int(self.metadata["solver"]["time_steps"])
-        self.time_step_size = float(self.metadata["solver"]["time_step_size"])
+        self.time_steps = int(self.metadata[SOLVER_KEY][TIME_STEPS_KEY])
+        self.time_step_size = float(self.metadata[SOLVER_KEY][TIME_STEP_SIZE_KEY])
         self.max_time = (self.time_steps - 1) * self.time_step_size
 
-        self.spatial_step_size = float(self.metadata["solver"]["spatial_step_size"])
-        self.num_domain_points = int(self.metadata["solver"]["num_domain_points"])
+        self.spatial_step_size = float(self.metadata[SOLVER_KEY][SPATIAL_STEP_SIZE_KEY])
+        self.num_domain_points = int(self.metadata[SOLVER_KEY][NUM_DOMAIN_POINTS_KEY])
         self.domain_length = float(self.num_domain_points - 1) * self.spatial_step_size
 
         # Memory-mapped 2D array; does not load everything into RAM, only time steps as requested

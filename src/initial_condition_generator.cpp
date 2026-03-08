@@ -2,9 +2,6 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-#include <filesystem>
-#include <fstream>
-#include <limits>
 
 
 #include "initial_condition_generator.h"
@@ -59,75 +56,27 @@ double RandomInitialCondition::operator()(double x) const {
     return sum;
 }
 
-void RandomInitialCondition::saveMetadataJSON(const std::filesystem::path& base_path,
-    const std::filesystem::path& sample_folder) const
-{
-    std::filesystem::path filepath = (base_path / sample_folder) / "metadata.json";
-
-    // Read existing solver metadata
-    std::ifstream in(filepath);
-    if (!in) {
-        std::cerr << "Failed to open solver metadata for reading: " << filepath << "\n";
-        return;
+void RandomInitialCondition::appendMetadata(nlohmann::json& metadata) const {
+    metadata["config"] = {
+        {"n", config.n},
+        {"domain_length", config.domain_length},
+        {"amp_min", config.amp_min},
+        {"amp_max", config.amp_max},
+        {"frequency_multiplier_min", config.frequency_multiplier_min},
+        {"frequency_multiplier_max", config.frequency_multiplier_max},
+        {"wrap_around_frequency_multiplier_min", config.wrap_around_frequency_multiplier_min},
+        {"wrap_around_frequency_multiplier_max", config.wrap_around_frequency_multiplier_max}
+    };
+    nlohmann::json terms_array = nlohmann::json::array();
+    for (const Term& term : terms) {
+        terms_array.push_back({
+            {"amplitude", term.amplitude},
+            {"frequency", term.frequency},
+            {"phase_shift", term.phase_shift}
+        });
     }
-    std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-
-    // Find last non-whitespace char and ensure it's a closing brace
-    auto is_whitespace = [](unsigned char c) { return std::isspace(c) != 0; };// helper function to check for whitespace
-    size_t end = content.size();
-    while (end > 0 && is_whitespace(static_cast<unsigned char>(content[end - 1]))) --end;
-    if (end == 0 || content[end - 1] != '}') {
-        std::cerr << "Invalid solver metadata JSON (missing closing '}'): " << filepath << "\n";
-        return;
-    }
-
-    // Skip if data already appended
-    if (content.find("\"config\"") != std::string::npos ||
-        content.find("\"terms\"") != std::string::npos ||
-        content.find("\"bias\"") != std::string::npos) {
-        std::cerr << "IC metadata already present. Skipping: " << filepath << "\n";
-        return;
-    }
-
-    // Remove final '}' and trailing whitespace before it
-    content.erase(end - 1);
-    while (!content.empty() && is_whitespace(static_cast<unsigned char>(content.back()))) content.pop_back();
-
-    // Build the append fragment
-    std::ostringstream a;
-    a << std::setprecision(std::numeric_limits<double>::max_digits10);
-
-    a << ",\n\n" << "  \"config\": {\n";
-    a << "    \"n\": " << config.n << ",\n";
-    a << "    \"domain_length\": " << config.domain_length << ",\n";
-    a << "    \"amp_min\": " << config.amp_min << ",\n";
-    a << "    \"amp_max\": " << config.amp_max << ",\n";
-    a << "    \"frequency_multiplier_min\": " << config.frequency_multiplier_min << ",\n";
-    a << "    \"frequency_multiplier_max\": " << config.frequency_multiplier_max << ",\n";
-    a << "    \"wrap_around_frequency_multiplier_min\": " << config.wrap_around_frequency_multiplier_min << ",\n";
-    a << "    \"wrap_around_frequency_multiplier_max\": " << config.wrap_around_frequency_multiplier_max << "\n";
-    a << "  },\n\n";
-
-    a << "  \"terms\": [\n";
-    for (size_t i = 0; i < terms.size(); ++i) {
-        const auto& t = terms[i];
-        a << "    {\n";
-        a << "      \"amplitude\": " << t.amplitude << ",\n";
-        a << "      \"frequency\": " << t.frequency << ",\n";
-        a << "      \"phase_shift\": " << t.phase_shift << "\n";
-        a << "    }" << (i + 1 < terms.size() ? "," : "") << "\n";
-    }
-    a << "  ],\n\n"
-        << "  \"bias\": " << bias << "\n"
-        << "}\n";
-
-    // Write merged JSON back
-    std::ofstream out(filepath, std::ios::trunc);
-    if (!out) {
-        std::cerr << "Failed to open solver metadata for writing: " << filepath << "\n";
-        return;
-    }
-    out << content << a.str();
+    metadata["terms"] = terms_array;
+    metadata["bias"] = bias;
 }
 
 std::string RandomInitialCondition::toString() const {
