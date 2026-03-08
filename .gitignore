@@ -7,3 +7,4 @@ training_data/
 *.dat
 __pycache__/
 exaflow-ml/
+.claude/

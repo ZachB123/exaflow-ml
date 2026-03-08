@@ -10,6 +10,7 @@
 
 #include "initial_condition_generator.h"
 #include "burgers.h"
+#include "metadata_writer.h"
 
 // how many training samples to generate
 const int DEFAULT_NUM_SAMPLES = 5;
