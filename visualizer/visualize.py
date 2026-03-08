@@ -28,6 +28,13 @@ def load_frames(data_dir):
 
 def resolve_folder(folder_name):
     # Resolves the folder path for a given sample name or relative path.
+    # If folder_name is an integer, treat as sample_XXXXXX in training_data
+    if folder_name.isdigit():
+        sample_name = f"sample_{int(folder_name):06d}"
+        candidate = os.path.join(PROJECT_ROOT, "training_data", sample_name)
+        if os.path.isdir(candidate):
+            return candidate
+        raise FileNotFoundError(f"Could not find folder 'sample_{int(folder_name):06d}' in training_data.")
     if os.path.sep in folder_name:
         candidate = os.path.join(PROJECT_ROOT, folder_name)
         if os.path.isdir(candidate):
