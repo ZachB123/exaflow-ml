@@ -172,13 +172,5 @@ if __name__ == "__main__":
     X = np.vstack([m for m in X_matrices if m.size > 0])
     y = np.concatenate([m for m in y_matrices if m.size > 0])
 
-    print(f"Data shape: X={X.shape}, y={y.shape}")
-    print(f"cq mean: {y.mean()}, cq std: {y.std()}")
-
-    print("Training model...")
     model, X_scaler = train_model(X, y)
 
-    # Save model and scaler
-    torch.save(model.state_dict(), "viscosity_model.pth")
-    joblib.dump(X_scaler, "X_scaler.joblib")
-    print("Model and scaler saved.")
