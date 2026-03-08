@@ -42,6 +42,24 @@ class ArtificialViscosityNet(nn.Module):
         return self.net(x)
 
 
+def verify_initial_condition_reconstruction(sample):
+    solution = BurgersSolution(sample)
+    print(solution)
+
+    #testing u0() vs. csv data for timestep_00000
+    x_csv, u_csv = solution.get_time_step(0)
+    u_reconstructed = np.array([solution.initial_condition(x) for x in x_csv])
+
+    max_abs_error = np.max(np.abs(u_reconstructed - u_csv))
+    mean_abs_error = np.mean(np.abs(u_reconstructed - u_csv))
+
+    for i in range(10):
+        print(f"x={x_csv[i]:.2f}  u0={u_reconstructed[i]:.5f}  timestep_00000={u_csv[i]:.5f}")
+    
+    print("Max abs error:", max_abs_error)
+    print("Mean abs error:", mean_abs_error)
+
+
 def get_training_data_folder_names():
     return sorted([item.name for item in DEFAULT_TRAINING_DATA_DIR.iterdir() if item.is_dir() and (item / METADATA_FILENAME).exists()])
 
@@ -61,19 +79,26 @@ def requires_artificial_viscosity(dx, u_i_minus_1, u_i_plus_1):
 #     return (2 / (dx * ux_diff)) * ((dx**2 / (dt * uxx)) * (u_next_i - u_i + u_i * (dt/dx) * (u_i_plus_1 - u_i_minus_1)) - nu)
 
 
+# def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):
+#     # todo store nu in the metadata
+#     # sometimes got divide by 0
+#     uxx = (u_i_plus_1 - 2 * u_i + u_i_minus_1)
+#     if uxx == 0:
+#         return None
+#
+#     ux_diff = abs(u_i_plus_1 - u_i_minus_1)
+#     if ux_diff == 0:
+#         return None
+#
+#     return (2 / (dx * ux_diff)) * ((dx**2 / (dt * uxx)) * (u_next_i - u_i + u_i * (dt/dx) * (u_i_plus_1 - u_i_minus_1)) - nu)
+
 def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):
     # todo store nu in the metadata
     # sometimes got divide by 0
-    uxx = (u_i_plus_1 - 2 * u_i + u_i_minus_1)
-    if uxx == 0:
+    if (u_i_plus_1 - 2*u_i + u_i_minus_1) == 0:
         return None
 
-    ux_diff = abs(u_i_plus_1 - u_i_minus_1)
-    if ux_diff == 0:
-        return None
-
-    return (2 / (dx * ux_diff)) * ((dx**2 / (dt * uxx)) * (u_next_i - u_i + u_i * (dt/dx) * (u_i_plus_1 - u_i_minus_1)) - nu)
-
+    return (2 / (dx * abs(u_i_plus_1 - u_i_minus_1))) * ((dx**2 / (dt * (u_i_plus_1 - 2 * u_i + u_i_minus_1))) * (u_next_i - u_i + u_i * (dt/dx) * (u_i_plus_1 - u_i_minus_1)) - nu)
 
 def get_feature_matrices_for_sample(sample_name):
     X_rows = []
@@ -106,8 +131,9 @@ def get_feature_matrices_for_sample(sample_name):
             if requires_artificial_viscosity(coarse_dx, u_i_minus_1, u_i_plus_1):
                 cq = reverse_engineer_cq(coarse_dt, coarse_dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1)
                 if cq is not None and not np.isnan(cq) and not np.isinf(cq):
-                    # Clamp cq to reasonable values if necessary
-                    cq = np.clip(cq, -100, 100)
+                    # cq = np.clip(cq, -100, 100)
+                    # if abs(cq) > 1000000000:
+                    #     print(cq)
                     # we can't use u_next_i as a feature because we will never have that when running the sim normally
                     X_rows.append([coarse_dt, coarse_dx, u_i, u_i_minus_1, u_i_plus_1])
                     y_rows.append(cq)
