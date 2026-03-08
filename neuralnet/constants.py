@@ -5,7 +5,9 @@ FILE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = FILE_DIR.parent
 DEFAULT_TRAINING_DATA_DIR = REPO_ROOT / "training_data"
 
+SOLUTION_DATA_FILENAME = "solution.bin"
 METADATA_FILENAME = "metadata.json"
+
 CSV_FILENAME_FORMAT = "timestep_{:05d}.csv"
 
 CONFIG_KEY = "config"

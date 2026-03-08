@@ -10,6 +10,7 @@
 
 #include "initial_condition_generator.h"
 #include "burgers.h"
+#include "metadata_writer.h"
 
 // how many training samples to generate
 const int DEFAULT_NUM_SAMPLES = 5;
@@ -244,12 +245,10 @@ int main(int argc, char* argv[]) {
         std::ostringstream folder_name;
         folder_name << "sample_" << std::setw(6) << std::setfill('0') << sample_index;
 
-        solver.saveSolution(TRAINING_DIR, folder_name.str(), 1);
-        f.saveMetadataJSON(TRAINING_DIR, folder_name.str(),
-                          time_steps, time_step_size,
-                          solver.getNumDomainPoints(),
-                          solver.getSpatialStepSize(),
-                          solver.getSchemeName());
+        solver.saveBinarySolution(TRAINING_DIR, folder_name.str());
+        MetadataWriter(solver, f).write(
+            std::filesystem::path(TRAINING_DIR) / folder_name.str() / "metadata.json"
+        );
 
         auto sample_end = std::chrono::high_resolution_clock::now();
         auto sample_duration = std::chrono::duration_cast<std::chrono::milliseconds>(sample_end - sample_start);
