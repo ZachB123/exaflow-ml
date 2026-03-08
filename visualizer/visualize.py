@@ -32,8 +32,6 @@ def resolve_folder(folder_name):
         candidate = os.path.join(PROJECT_ROOT, folder_name)
         if os.path.isdir(candidate):
             return candidate
-        if os.path.isdir(folder_name):
-            return os.path.abspath(folder_name)
         raise FileNotFoundError(f"Folder not found: {folder_name}")
     
     candidates = []
