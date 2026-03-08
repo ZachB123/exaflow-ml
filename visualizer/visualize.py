@@ -1,7 +1,6 @@
-import argparse
-import glob
 import os
-
+import glob
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.widgets as widgets
@@ -10,12 +9,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
 def load_frames(data_dir):
-    """
-    Loads all timestep_XXXXX.csv files inside data_dir.
-    Returns:
-        x: np.array of shape (N,)
-        frames: list of np.array, each shape (N,)
-    """
+    # Loads all timestep_XXXXX.csv files inside data_dir.
     files = sorted(glob.glob(os.path.join(data_dir, "timestep_*.csv")))
 
     if not files:
@@ -33,13 +27,7 @@ def load_frames(data_dir):
     return x, frames, files
 
 def resolve_folder(folder_name):
-    """
-    Resolves the folder path for a given sample name or relative path.
-    If folder_name contains '/', treat as a relative or absolute path.
-    Otherwise, search common locations: training_data/, data/, project root.
-    If multiple matches are found, prompt user to select one.
-    Returns the absolute path to the folder, or raises FileNotFoundError.
-    """
+    # Resolves the folder path for a given sample name or relative path.
     if os.path.sep in folder_name:
         candidate = os.path.join(PROJECT_ROOT, folder_name)
         if os.path.isdir(candidate):
@@ -94,14 +82,12 @@ def run_visualizer(folder_name, initial_speed):
     playing = False
     speed = initial_speed
 
-    y_lock = True            # False = autoscale every frame; True = keep current y-limits
+    y_lock = True             # False = autoscale every frame; True = keep current y-limits
     y_margin_frac = 0.05      # 5% margin above/below data range when autoscaling
 
     def update_plot():
-        """
-        Update the plotted line and optionally autoscale the y-axis.
-        Uses frame_idx (int) and frames (list of arrays) from outer scope.
-        """
+        # Updates the plotted line and optionally autoscale the y-axis.
+        # Uses frame_idx (int) and frames (list of arrays) from outer scope.
         line.set_ydata(frames[frame_idx])
         ax.set_title(f"{os.path.basename(files[frame_idx])}   (frame {frame_idx})")
 
