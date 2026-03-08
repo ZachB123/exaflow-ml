@@ -50,19 +50,11 @@ def resolve_folder(folder_name):
     if len(candidates) == 1:
         return candidates[0]
     elif len(candidates) > 1:
-        print(f"Multiple folders found for '{folder_name}':")
+        print(f"Error: Multiple folders found for '{folder_name}':")
         for idx, c in enumerate(candidates):
             print(f"  [{idx+1}] {c}")
-        while True:
-            try:
-                choice = input(f"Select folder [1-{len(candidates)}]: ").strip()
-                choice_idx = int(choice) - 1
-                if 0 <= choice_idx < len(candidates):
-                    return candidates[choice_idx]
-                else:
-                    print("Invalid selection. Try again.")
-            except Exception:
-                print("Invalid input. Enter a number.")
+        print("Please specify the full path to the folder you want to visualize.")
+        exit(1)
     else:
         raise FileNotFoundError(f"Could not find folder '{folder_name}' in training_data/, data/, or project root.")
 
