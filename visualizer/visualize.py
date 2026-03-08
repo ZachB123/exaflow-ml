@@ -34,6 +34,7 @@ def resolve_folder(folder_name):
             return candidate
         raise FileNotFoundError(f"Folder not found: {folder_name}")
     
+    # Only check training_data and data, not project root
     candidates = []
     td_candidate = os.path.join(PROJECT_ROOT, "training_data", folder_name)
     if os.path.isdir(td_candidate):
@@ -41,9 +42,6 @@ def resolve_folder(folder_name):
     data_candidate = os.path.join(PROJECT_ROOT, "data", folder_name)
     if os.path.isdir(data_candidate):
         candidates.append(data_candidate)
-    root_candidate = os.path.join(PROJECT_ROOT, folder_name)
-    if os.path.isdir(root_candidate):
-        candidates.append(root_candidate)
     
     if len(candidates) == 1:
         return candidates[0]
@@ -54,7 +52,7 @@ def resolve_folder(folder_name):
         print("Please specify the full path to the folder you want to visualize.")
         exit(1)
     else:
-        raise FileNotFoundError(f"Could not find folder '{folder_name}' in training_data/, data/, or project root.")
+        raise FileNotFoundError(f"Could not find folder '{folder_name}' in training_data/ or data/.")
 
 def run_visualizer(folder_name, initial_speed):
     data_dir = resolve_folder(folder_name)
