@@ -21,3 +21,8 @@ void calculateNextU(const std::vector<std::vector<double>>& u, std::vector<std::
     }
 
 }
+
+double calculateArtificialViscosity(const std::vector<std::vector<double>>& u, double cq, double dx, double dy, int i, int j, int nx, int ny) {
+
+    
+}
