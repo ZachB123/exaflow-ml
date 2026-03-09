@@ -147,8 +147,9 @@ def run_visualizer(folder_name, initial_speed):
     axplay = plt.axes([0.23, 0.1, 0.15, 0.075])
     axreset = plt.axes([0.40, 0.1, 0.12, 0.075])
     axnext = plt.axes([0.55, 0.1, 0.1, 0.075])
-    axspeed = plt.axes([0.70, 0.1, 0.25, 0.05])
-
+    axspeed = plt.axes([0.74, 0.1, 0.15, 0.04])
+    
+    
     prev_button = widgets.Button(axprev, "Prev")
     play_button = widgets.Button(axplay, "Play")
     reset_button = widgets.Button(axreset, "Reset")
