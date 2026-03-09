@@ -129,5 +129,10 @@ int main(int argc, char *argv[]) {
       .time_step_size = 0.0001,
   };
 
-  run_all_schemes("../data", "random_function", random_function_config, f, 1);
+  std::cout << "\nRunning random_function on " << scheme << "...\n";
+  BurgersSolver1d random_solver(make_scheme(scheme), random_function_config, f);
+  random_solver.solve();
+  random_solver.saveSolution("../data", "random_function_" + scheme, 1);
+  std::cout << "random_function NaN detected: "
+            << random_solver.wasNanDetected() << std::endl;
 }
