@@ -10,29 +10,10 @@
 #include "burgers.h"
 #include "initial_condition_generator.h"
 
-void run_all_schemes(const std::string &base_domain,
-                     const std::string &base_name, const SolverConfig &config,
-                     const std::function<double(double)> &func,
-                     int save_gap = 1) {
-  // 1. LaxWendroff Run
-  std::cout << "\nRunning " << base_name << " on LaxWendroff..." << std::endl;
-  BurgersSolver1d lax_solver(std::make_unique<LaxWendroff>(), config, func);
-  lax_solver.solve();
-  lax_solver.saveSolution(
-      base_domain, base_name + "_" + lax_solver.getSchemeName(), save_gap);
-  std::cout << base_name
-            << " on LaxWendroff NaN detected: " << lax_solver.wasNanDetected()
-            << std::endl;
-
-  // 2. Godunov Run
-  std::cout << "\nRunning " << base_name << " on Godunov..." << std::endl;
-  BurgersSolver1d godunov_solver(std::make_unique<Godunov>(), config, func);
-  godunov_solver.solve();
-  godunov_solver.saveSolution(
-      base_domain, base_name + "_" + godunov_solver.getSchemeName(), save_gap);
-  std::cout << base_name
-            << " on Godunov NaN detected: " << godunov_solver.wasNanDetected()
-            << std::endl;
+auto make_scheme(const std::string &name) -> std::unique_ptr<BurgerScheme> {
+  if (name == "LaxWendroff")
+    return std::make_unique<LaxWendroff>();
+  return std::make_unique<Godunov>();
 }
 
 int main(int argc, char *argv[]) {
