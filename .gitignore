@@ -1,6 +1,7 @@
 .vscode/
 build/
 data/
+data_2d/
 venv/
 training_data/
 .DS_Store
