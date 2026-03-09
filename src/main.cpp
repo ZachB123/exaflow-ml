@@ -9,21 +9,25 @@
 #include "initial_condition_generator.h"
 #include "metadata_writer.h"
 
-int main() {
+int main()
+{
 
     SolverConfig step_function_config = {
         .kinematic_viscosity = 0.01,
         .time_steps = 2000,
         .domain_length = 2.0,
-        .time_step_size = 0.001
-    };
+        .time_step_size = 0.001};
 
     // 1 everywhere in domain
     // for 0.5 <= x <= 1 the function value is 2
-    std::function<double(double)> step_function = [](double x) -> double {
-        if (x >= 0.5 && x <= 1.0) {
+    std::function<double(double)> step_function = [](double x) -> double
+    {
+        if (x >= 0.5 && x <= 1.0)
+        {
             return 2.0;
-        } else {
+        }
+        else
+        {
             return 1.0;
         }
     };
@@ -42,11 +46,11 @@ int main() {
         .kinematic_viscosity = 0.01,
         .time_steps = 5000,
         .domain_length = 2.0 * M_PI,
-        .time_step_size = 0.001
-    };
+        .time_step_size = 0.001};
 
     // initial condition: one full sine wave over [0, 2π]
-    std::function<double(double)> sine_function = [](double x) -> double {
+    std::function<double(double)> sine_function = [](double x) -> double
+    {
         return std::sin(x);
     };
 
@@ -60,7 +64,6 @@ int main() {
     MetadataWriter(solver).write("../data/sine_wave/metadata.json");
     std::cout << "sine wave was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
-    
     RandomInitialConditionConfig functionConfig;
     RandomInitialCondition f(functionConfig, false, true);
     std::cout << f.toString() << std::endl;
@@ -81,5 +84,4 @@ int main() {
     random_function_solver.saveBinarySolution("../data", "random_function");
     MetadataWriter(random_function_solver, f).write("../data/random_function/metadata.json");
     std::cout << "random function was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
-
 }
