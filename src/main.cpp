@@ -61,14 +61,20 @@ int main(int argc, char *argv[]) {
     wiki_config_base.kinematic_viscosity = v;
     std::string v_str = (v == 1.0) ? "1.0" : (v == 0.1) ? "0.1" : "0.01";
 
-    run_all_schemes("../data_v2", "wiki_gaussian_" + v_str, wiki_config_base,
-                    gaussian_function, 10);
-    run_all_schemes("../data_v2", "wiki_n_wave_" + v_str, wiki_config_base,
-                    n_wave_function, 10);
-  }
+    std::cout << "Solving Gaussian for v=" << v << "...\n";
+    BurgersSolver1d gaussian_solver(make_scheme(scheme), wiki_config_base,
+                                    gaussian_function);
+    gaussian_solver.solve();
+    gaussian_solver.saveSolution("../data",
+                                 "wiki_gaussian_" + v_str + "_" + scheme, 10);
 
-  // --- PREVIOUS TEST CASES ---
-  std::cout << "\n--- PREVIOUS TEST CASES ---\n";
+    std::cout << "Solving N-wave for v=" << v << "...\n";
+    BurgersSolver1d n_wave_solver(make_scheme(scheme), wiki_config_base,
+                                  n_wave_function);
+    n_wave_solver.solve();
+    n_wave_solver.saveSolution("../data", "wiki_n_wave_" + v_str + "_" + scheme,
+                               10);
+  }
 
   SolverConfig step_function_config = {.kinematic_viscosity = 0.01,
                                        .time_steps = 2000,
