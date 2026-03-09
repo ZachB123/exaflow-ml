@@ -91,8 +91,13 @@ int main(int argc, char *argv[]) {
     }
   };
 
-  run_all_schemes("../data", "step_function", step_function_config,
-                  step_function, 1);
+  std::cout << "\nRunning step_function on " << scheme << "...\n";
+  BurgersSolver1d step_function_solver(make_scheme(scheme),
+                                       step_function_config, step_function);
+  step_function_solver.solve();
+  step_function_solver.saveSolution("../data", "step_function_" + scheme, 1);
+  std::cout << "step_function NaN detected: "
+            << step_function_solver.wasNanDetected() << std::endl;
 
   SolverConfig sine_wave_config = {.kinematic_viscosity = 0.01,
                                    .time_steps = 5000,
