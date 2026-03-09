@@ -67,7 +67,7 @@ class FTCS2D : public BurgerScheme2D {
             int num_domain_points_y) const override;
 };
 
-class LaxWendroff : public BurgerScheme2D {
+class LaxWendroff2D : public BurgerScheme2D {
     public:
         void calculateNextU(
                     const std::vector<std::vector<double>>& u, 
@@ -92,4 +92,23 @@ class LaxWendroff : public BurgerScheme2D {
             int j,
             int num_domain_points_x,
             int num_domain_points_y) const override;
+};
+
+class Godunov2D : public BurgerScheme2D {
+    public:
+        void calculateNextU(
+                    const std::vector<std::vector<double>>& u, 
+                    std::vector<std::vector<double>>& u_next, 
+                    // double cq, (unused)
+                    int num_domain_points_x, 
+                    int num_domain_points_y, 
+                    double time_step_size,
+                    double spatial_step_size_x, 
+                    double spatial_step_size_y, 
+                    double kinematic_viscosity) override;
+
+        std::string getName() const override;
+
+    protected:
+        double godunovFlux(double u_left, double r_right, double u_up, double u_down) const;
 };
