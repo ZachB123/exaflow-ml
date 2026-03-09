@@ -9,6 +9,8 @@ import json
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
+SEARCH_DIRS = ["training_data", "data"]
+
 def load_frames(data_dir):
     """
     Loads all timestep_XXXXX.csv files inside data_dir.
@@ -68,9 +70,8 @@ def resolve_folder(folder_name):
             return candidate
         raise FileNotFoundError(f"Folder not found: {folder_name}")
     # abstract search locations into a list in case we add more locations later
-    search_dirs = ["training_data", "data"]
     candidates = []
-    for search_dir in search_dirs:
+    for search_dir in SEARCH_DIRS:
         candidate = os.path.join(PROJECT_ROOT, search_dir, folder_name)
         if os.path.isdir(candidate):
             candidates.append(candidate)
@@ -83,7 +84,7 @@ def resolve_folder(folder_name):
         print("Please specify the full path to the folder you want to visualize.")
         return None
     else:
-        raise FileNotFoundError(f"Could not find folder '{folder_name}' in any of: {', '.join(search_dirs)}.")
+        raise FileNotFoundError(f"Could not find folder '{folder_name}' in any of: {', '.join(SEARCH_DIRS)}.")
 
 def run_visualizer(folder_name, initial_speed):
     data_dir = resolve_folder(folder_name)
