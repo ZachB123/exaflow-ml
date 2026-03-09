@@ -1,5 +1,5 @@
 import argparse
-import glob
+import json
 import os
 
 import numpy as np
@@ -9,119 +9,118 @@ import matplotlib.widgets as widgets
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
+
 def load_frames(data_dir):
     """
-    Loads all timestep_XXXXX.csv files inside data_dir.
+    Loads Burgers solution from:
+      - metadata.json
+      - solution.bin
+
     Returns:
         x: np.array of shape (N,)
-        frames: list of np.array, each shape (N,)
+        frames: np.memmap of shape (T, N)
+        frame_labels: list[str] of length T
     """
-    files = sorted(glob.glob(os.path.join(data_dir, "timestep_*.csv")))
+    metadata_path = os.path.join(data_dir, "metadata.json")
+    solution_path = os.path.join(data_dir, "solution.bin")
 
-    if not files:
-        raise ValueError(f"No timestep_*.csv files found in {data_dir}")
+    if not os.path.exists(metadata_path):
+        raise ValueError(f"metadata.json not found in {data_dir}")
 
-    frames = []
-    x = None
+    if not os.path.exists(solution_path):
+        raise ValueError(f"solution.bin not found in {data_dir}")
 
-    for f in files:
-        data = np.loadtxt(f, delimiter=",", skiprows=1)
-        if x is None:
-            x = data[:, 0]
-        frames.append(data[:, 1])
+    with open(metadata_path, "r") as f:
+        metadata = json.load(f)
 
-    return x, frames, files
+    solver = metadata["solver"]
+    time_steps = int(solver["time_steps"])
+    num_domain_points = int(solver["num_domain_points"])
+    spatial_step_size = float(solver["spatial_step_size"])
+
+    x = spatial_step_size * np.arange(num_domain_points)
+
+    frames = np.memmap(
+        solution_path,
+        dtype=np.float64,
+        mode="r",
+        shape=(time_steps, num_domain_points),
+    )
+
+    frame_labels = [f"timestep_{i:05d}" for i in range(time_steps)]
+
+    return x, frames, frame_labels
 
 
 def run_visualizer(folder_name, initial_speed):
-    # data_dir = os.path.join(PROJECT_ROOT, "training_data", folder_name)
-    # data_dir = os.path.join(PROJECT_ROOT, "data", folder_name)
     data_dir = os.path.join(PROJECT_ROOT, folder_name)
-    x, frames, files = load_frames(data_dir)
+    x, frames, frame_labels = load_frames(data_dir)
 
     fig, ax = plt.subplots()
     fig.canvas.manager.set_window_title(f"Burgers Visualizer – {folder_name}")
     plt.subplots_adjust(bottom=0.25)
 
     line, = ax.plot(x, frames[0])
-    ax.set_title(os.path.basename(files[0]))
+    ax.set_title(f"{frame_labels[0]}   (frame 0)")
 
     frame_pos = 0.0
     frame_idx = 0
     playing = False
-    speed = initial_speed
+    speed = float(initial_speed)
 
-    y_lock = True            # False = autoscale every frame; True = keep current y-limits
-    y_margin_frac = 0.05      # 5% margin above/below data range when autoscaling
+    y_lock = True
+    y_margin_frac = 0.05
 
     def update_plot():
-        """
-        Update the plotted line and optionally autoscale the y-axis.
-        Uses frame_idx (int) and frames (list of arrays) from outer scope.
-        """
         line.set_ydata(frames[frame_idx])
-        ax.set_title(f"{os.path.basename(files[frame_idx])}   (frame {frame_idx})")
+        ax.set_title(f"{frame_labels[frame_idx]}   (frame {frame_idx})")
 
         if not y_lock:
-            # compute min/max of the current frame
             y_min = float(np.min(frames[frame_idx]))
             y_max = float(np.max(frames[frame_idx]))
 
-            # avoid zero-height limits
             if y_max == y_min:
-                # expand by +-0.5 or 10% if value is large
                 delta = max(abs(y_min) * 0.1, 0.5)
                 y_min -= delta
                 y_max += delta
 
-            # add a small margin so plot doesn't touch the edges
             margin = y_margin_frac * (y_max - y_min)
             ax.set_ylim(y_min - margin, y_max + margin)
 
-        # if y_lock is True we do nothing (y-limits stay as they are)
         fig.canvas.draw_idle()
 
-    # --- Checkbox to lock/unlock y-axis ---
-    # Place it near the right side of the figure (adjust coords if overlap)
-    ax_lock = plt.axes([0.82, 0.15, 0.12, 0.08])  # [left, bottom, width, height] in figure coords
+    ax_lock = plt.axes([0.82, 0.15, 0.12, 0.08])
     lock_cb = widgets.CheckButtons(ax_lock, ["Lock Y"], [y_lock])
 
     def on_toggle_lock(label):
         nonlocal y_lock
-        # CheckButtons toggles label's state; simply flip y_lock
         y_lock = not y_lock
 
-        # If we just locked the y-axis, capture current limits as the locked limits
         if y_lock:
-            # read current limits (use what is visible now)
             current_ylim = ax.get_ylim()
-            ax.set_ylim(current_ylim)  # enforce them explicitly
+            ax.set_ylim(current_ylim)
         else:
-            # if unlocking, do an immediate autoscale to current frame so view updates
-            # (this uses update_plot's autoscale branch)
             update_plot()
 
         fig.canvas.draw_idle()
 
     lock_cb.on_clicked(on_toggle_lock)
 
-    # button: next frame
     def next_frame(event):
         nonlocal frame_pos, frame_idx
-        frame_idx = (frame_idx + 1) % len(frames)
+        frame_idx = min(frame_idx + 1, len(frames) - 1)
         frame_pos = float(frame_idx)
         update_plot()
 
     def prev_frame(event):
         nonlocal frame_pos, frame_idx
-        frame_idx = (frame_idx - 1) % len(frames)
+        frame_idx = max(frame_idx - 1, 0)
         frame_pos = float(frame_idx)
         update_plot()
 
     def play_pause(event):
         nonlocal playing, frame_pos, frame_idx
 
-        # If we are at the last frame, reset to 0
         if frame_idx >= len(frames) - 1:
             frame_pos = 0.0
             frame_idx = 0
@@ -130,8 +129,6 @@ def run_visualizer(folder_name, initial_speed):
         playing = not playing
         play_button.label.set_text("Pause" if playing else "Play")
         fig.canvas.draw_idle()
-
-
 
     def reset(event):
         nonlocal frame_pos, frame_idx, playing
@@ -142,34 +139,29 @@ def run_visualizer(folder_name, initial_speed):
         update_plot()
         fig.canvas.draw_idle()
 
-
-
-    # slider: speed override
     def change_speed(val):
         nonlocal speed
         speed = float(val)
 
-    # --- UI Layout ---
-    axprev  = plt.axes([0.1, 0.1, 0.1, 0.075])
-    axplay  = plt.axes([0.23, 0.1, 0.15, 0.075])
+    axprev = plt.axes([0.1, 0.1, 0.1, 0.075])
+    axplay = plt.axes([0.23, 0.1, 0.15, 0.075])
     axreset = plt.axes([0.40, 0.1, 0.12, 0.075])
-    axnext  = plt.axes([0.55, 0.1, 0.1, 0.075])
+    axnext = plt.axes([0.55, 0.1, 0.1, 0.075])
     axspeed = plt.axes([0.70, 0.1, 0.25, 0.05])
 
-    prev_button  = widgets.Button(axprev, "Prev")
-    play_button  = widgets.Button(axplay, "Play")
+    prev_button = widgets.Button(axprev, "Prev")
+    play_button = widgets.Button(axplay, "Play")
     reset_button = widgets.Button(axreset, "Reset")
-    next_button  = widgets.Button(axnext, "Next")
+    next_button = widgets.Button(axnext, "Next")
     speed_slider = widgets.Slider(axspeed, "Speed", 0.1, 50.0, valinit=speed)
 
     prev_button.on_clicked(prev_frame)
     next_button.on_clicked(next_frame)
     play_button.on_clicked(play_pause)
-    speed_slider.on_changed(change_speed)
     reset_button.on_clicked(reset)
+    speed_slider.on_changed(change_speed)
 
-    timer = fig.canvas.new_timer(interval=30)  # milliseconds
-
+    timer = fig.canvas.new_timer(interval=30)
 
     def on_timer():
         nonlocal frame_pos, frame_idx, playing
@@ -178,19 +170,16 @@ def run_visualizer(folder_name, initial_speed):
 
         frame_pos += speed
 
-        # reached or passed the last frame
         if frame_pos >= len(frames) - 1:
             frame_pos = len(frames) - 1
             frame_idx = int(frame_pos)
             update_plot()
 
-            # stop playback
             playing = False
             play_button.label.set_text("Play")
             fig.canvas.draw_idle()
             return
 
-        # normal update
         frame_idx = int(frame_pos)
         update_plot()
 
@@ -205,11 +194,11 @@ def main():
     parser.add_argument(
         "folder",
         type=str,
-        help="Folder name inside data/, e.g. step_function or sine_wave",
+        help="Folder path relative to project root, e.g. data/step_function",
     )
     parser.add_argument(
         "--speed",
-        type=int,
+        type=float,
         default=1,
         help="Initial playback speed (frames per tick)",
     )
