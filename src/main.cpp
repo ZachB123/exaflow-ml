@@ -109,7 +109,13 @@ int main(int argc, char *argv[]) {
     return std::sin(x);
   };
 
-  run_all_schemes("../data", "sine_wave", sine_wave_config, sine_function, 1);
+  std::cout << "\nRunning sine_wave on " << scheme << "...\n";
+  BurgersSolver1d sine_solver(make_scheme(scheme), sine_wave_config,
+                              sine_function);
+  sine_solver.solve();
+  sine_solver.saveSolution("../data", "sine_wave_" + scheme, 1);
+  std::cout << "sine_wave NaN detected: " << sine_solver.wasNanDetected()
+            << std::endl;
 
   RandomInitialConditionConfig functionConfig;
   RandomInitialCondition f(functionConfig, false, true);
