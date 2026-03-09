@@ -39,3 +39,57 @@ class BurgerScheme2D {
             return 0.0; // default: no artificial viscosity
         }
 };
+
+class FTCS2D : public BurgerScheme2D {
+    public:
+        void calculateNextU(
+                    const std::vector<std::vector<double>>& u, 
+                    std::vector<std::vector<double>>& u_next, 
+                    double cq, 
+                    int num_domain_points_x, 
+                    int num_domain_points_y, 
+                    double time_step_size,
+                    double spatial_step_size_x, 
+                    double spatial_step_size_y, 
+                    double kinematic_viscosity) override;
+
+        std::string getName() const override;
+    
+    protected:
+        double calculateArtificialViscosity(
+            const std::vector<std::vector<double>>& u 
+            double cq,
+            double spatial_step_size_x,
+            double spatial_step_size_y,
+            int i,
+            int j,
+            int num_domain_points_x,
+            int num_domain_points_y) const override;
+};
+
+class LaxWendroff : public BurgerScheme2D {
+    public:
+        void calculateNextU(
+                    const std::vector<std::vector<double>>& u, 
+                    std::vector<std::vector<double>>& u_next, 
+                    double cq, 
+                    int num_domain_points_x, 
+                    int num_domain_points_y, 
+                    double time_step_size,
+                    double spatial_step_size_x, 
+                    double spatial_step_size_y, 
+                    double kinematic_viscosity) override;
+
+        std::string getName() const override;
+    
+    protected:
+        double calculateArtificialViscosity(
+            const std::vector<std::vector<double>>& u 
+            double cq,
+            double spatial_step_size_x,
+            double spatial_step_size_y,
+            int i,
+            int j,
+            int num_domain_points_x,
+            int num_domain_points_y) const override;
+};
