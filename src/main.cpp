@@ -1,7 +1,9 @@
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "burger_scheme.h"
@@ -33,7 +35,22 @@ void run_all_schemes(const std::string &base_domain,
             << std::endl;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+  std::string scheme = "Godunov";
+  bool append = false;
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+    if ((arg == "-s" || arg == "--scheme") && i + 1 < argc)
+      scheme = argv[++i];
+    else if (arg == "-a" || arg == "--append")
+      append = true;
+  }
+
+  if (!append) {
+    for (auto &entry : std::filesystem::directory_iterator("../data"))
+      if (entry.is_regular_file())
+        std::filesystem::remove(entry.path());
+  }
   // --- WIKIPEDIA TEST CASES ---
   std::cout << "\n--- WIKIPEDIA TEST CASES ---\n";
 
