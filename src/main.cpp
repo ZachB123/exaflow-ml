@@ -13,8 +13,11 @@ int main() {
 
   SolverConfig wiki_config_base = {
       .kinematic_viscosity = 1.0, // Will be overwritten in loop
+
       .time_steps = 5000,
+
       .domain_length = 12.0, // Matches [-6, 6] range
+
       .time_step_size = 0.001};
 
   // Gaussian Initial Condition: u(x,0) = e^(-x^2/2)
