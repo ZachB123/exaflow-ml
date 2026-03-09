@@ -2,33 +2,9 @@ import json
 import os
 import numpy as np
 import pandas as pd
-from collections import OrderedDict
+from cachetools import LRUCache
 from constants import *
-
-
-class LRUCache:
-    def __init__(self, maxsize=128):
-        self.cache = OrderedDict()
-        self.maxsize = maxsize
-
-    def get(self, key):
-        if key not in self.cache:
-            return None
-        self.cache.move_to_end(key)
-        return self.cache[key]
-
-    def set(self, key, value):
-        if key in self.cache:
-            self.cache.move_to_end(key)
-        self.cache[key] = value
-        if len(self.cache) > self.maxsize:
-            self.cache.popitem(last=False)  # evict LRU
-
-    def __contains__(self, key):
-        return key in self.cache
-
-    def clear(self):
-        self.cache.clear()
+import pandas as pd
 
 
 class BurgersSolution:
@@ -60,6 +36,7 @@ class BurgersSolution:
         self.time_step_size = self.solver[TIME_STEP_SIZE_KEY]
         self.max_time = (self.time_steps - 1) * self.time_step_size
 
+        # Bounded LRU cache (stores most recently used timesteps)
         self._cache = LRUCache(maxsize=128)
 
         try:
@@ -89,7 +66,6 @@ class BurgersSolution:
             ),
         }
 
-
     def initial_condition(self, x):
         if x < 0 or x > self.domain_length:
             raise ValueError(
@@ -109,12 +85,7 @@ class BurgersSolution:
             )
         )
 
-
     def get_time_step(self, time_step_index):
-
-        cached = self._cache.get(time_step_index)
-        if cached is not None:
-            return cached
 
         if time_step_index < 0 or time_step_index >= self.time_steps:
             raise ValueError(
@@ -122,29 +93,34 @@ class BurgersSolution:
                 f"[0, {self.time_steps - 1}]"
             )
 
+        # Check cache first
+        cached = self._cache.get(time_step_index)
+        if cached is not None:
+            return cached
+
         csv_filename = CSV_FILENAME_FORMAT.format(time_step_index)
         csv_path = os.path.join(self.sample_dir, csv_filename)
 
         if not os.path.exists(csv_path):
             raise FileNotFoundError(f"CSV file not found: {csv_path}")
 
-        df = pd.read_csv(csv_path)
+        data = np.loadtxt(csv_path, delimiter=",", skiprows=1)
+        x_array = data[:, 0]
+        u_array = data[:, 1]
 
-        x_array = df[X_COLUMN].values
-        u_array = df[U_COLUMN].values
-
-        self._cache.set(time_step_index, (x_array, u_array))
+        # Store in cache
+        self._cache[time_step_index] = (x_array, u_array)
 
         return x_array, u_array
 
-
     def requires_artificial_viscosity_generator(self):
-        # lists the points that require artificial viscosity to make stable
+
         for t_index in range(self.time_steps):
 
             x_t, u_t = self.get_time_step(t_index)
 
             for i in range(self.num_domain_points - 1):
+
                 ux = (
                     (u_t[i + 1] - u_t[self.num_domain_points - 2]) / (2.0 * self.spatial_step_size)
                     if i == 0
@@ -162,8 +138,8 @@ class BurgersSolution:
     def _interpolate_spatial(self, x, x_array, u_array):
         return np.interp(x, x_array, u_array)
 
-
     def get_u(self, x, t):
+
         if x < 0 or x > self.domain_length:
             raise ValueError(
                 f"x={x} is out of domain bounds [0, {self.domain_length}]"
@@ -209,10 +185,8 @@ class BurgersSolution:
 
         return u_lower * (1 - weight) + u_upper * weight
 
-
     def clear_cache(self):
         self._cache.clear()
-
 
     def __repr__(self):
         return (
