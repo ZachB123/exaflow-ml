@@ -5,61 +5,30 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.widgets as widgets
-import json
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
 def load_frames(data_dir):
     """
-    Loads solution.bin + metadata.json inside data_dir.
-
+    Loads all timestep_XXXXX.csv files inside data_dir.
     Returns:
         x: np.array of shape (N,)
         frames: list of np.array, each shape (N,)
-        files: list of strings (synthetic file names like timestep_00000.csv)
-               so downstream code doesn't have to change for now.
     """
+    files = sorted(glob.glob(os.path.join(data_dir, "timestep_*.csv")))
 
-    # Get solution data and metadata files
-    bin_path = os.path.join(data_dir, "solution.bin")
-    meta_path = os.path.join(data_dir, "metadata.json")
+    if not files:
+        raise ValueError(f"No timestep_*.csv files found in {data_dir}")
 
-    if not os.path.exists(bin_path):
-        raise ValueError(f"Binary file not found in {data_dir}: solution.bin")
+    frames = []
+    x = None
 
-    if not os.path.exists(meta_path):
-        raise ValueError(f"Metadata file not found in {data_dir}: metadata.json")
-
-    # Parse solution metadata (JSON)
-    with open(meta_path, "r") as f:
-        meta = json.load(f)
-
-    num_domain_points = int(meta["solver"]["num_domain_points"])
-    num_timesteps = int(meta["solver"]["time_steps"])
-    dx = float(meta["solver"]["spatial_step_size"])
-
-    # Load binary data
-    data = np.fromfile(bin_path, dtype=np.float64)
-
-    expected = num_domain_points * num_timesteps
-    if data.size != expected:
-        raise ValueError(
-            f"Binary size mismatch for {bin_path}. "
-            f"Expected {expected} float64 values (num_timesteps={num_timesteps}, num_domain_points={num_domain_points}), got {data.size}."
-        )
-
-    u = data.reshape((num_timesteps, num_domain_points))
-
-    # Reconstruct x grid
-    x = dx * np.arange(num_domain_points)
-
-    # To keep downstream unchangedfor now, return frames as a list of 1D arrays
-    # (These are views into u; if you need independent arrays, use .copy())
-    frames = [u[i, :] for i in range(num_timesteps)]
-
-    # To keep downstream unchanged for now, return list of fake csv file names.
-    files = [f"timestep_{i:05d}.csv" for i in range(num_timesteps)]
+    for f in files:
+        data = np.loadtxt(f, delimiter=",", skiprows=1)
+        if x is None:
+            x = data[:, 0]
+        frames.append(data[:, 1])
 
     return x, frames, files
 
@@ -163,26 +132,41 @@ def run_visualizer(folder_name, initial_speed):
         fig.canvas.draw_idle()
 
 
+
+    def reset(event):
+        nonlocal frame_pos, frame_idx, playing
+        playing = False
+        play_button.label.set_text("Play")
+        frame_pos = 0.0
+        frame_idx = 0
+        update_plot()
+        fig.canvas.draw_idle()
+
+
+
     # slider: speed override
     def change_speed(val):
         nonlocal speed
         speed = float(val)
 
     # --- UI Layout ---
-    axprev = plt.axes([0.1, 0.1, 0.1, 0.075])
-    axplay = plt.axes([0.25, 0.1, 0.15, 0.075])
-    axnext = plt.axes([0.45, 0.1, 0.1, 0.075])
-    axspeed = plt.axes([0.65, 0.1, 0.25, 0.05])
+    axprev  = plt.axes([0.1, 0.1, 0.1, 0.075])
+    axplay  = plt.axes([0.23, 0.1, 0.15, 0.075])
+    axreset = plt.axes([0.40, 0.1, 0.12, 0.075])
+    axnext  = plt.axes([0.55, 0.1, 0.1, 0.075])
+    axspeed = plt.axes([0.70, 0.1, 0.25, 0.05])
 
-    prev_button = widgets.Button(axprev, "Prev")
-    play_button = widgets.Button(axplay, "Play")
-    next_button = widgets.Button(axnext, "Next")
+    prev_button  = widgets.Button(axprev, "Prev")
+    play_button  = widgets.Button(axplay, "Play")
+    reset_button = widgets.Button(axreset, "Reset")
+    next_button  = widgets.Button(axnext, "Next")
     speed_slider = widgets.Slider(axspeed, "Speed", 0.1, 50.0, valinit=speed)
 
     prev_button.on_clicked(prev_frame)
     next_button.on_clicked(next_frame)
     play_button.on_clicked(play_pause)
     speed_slider.on_changed(change_speed)
+    reset_button.on_clicked(reset)
 
     timer = fig.canvas.new_timer(interval=30)  # milliseconds
 
