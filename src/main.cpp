@@ -1,14 +1,11 @@
+#include "burger_scheme.h"
+#include "burgers.h"
+#include "initial_condition_generator.h"
 #include <cmath>
 #include <fstream>
 #include <functional>
 #include <iostream>
 #include <vector>
-
-
-#include "burger_scheme.h"
-#include "burgers.h"
-#include "initial_condition_generator.h"
-
 
 int main() {
   // --- WIKIPEDIA TEST CASES ---
@@ -40,25 +37,22 @@ int main() {
     wiki_config_base.kinematic_viscosity = v;
 
     std::cout << "Solving Gaussian for v=" << v << "...\n";
-    BurgersSolver1d gaussian_solver(std::make_unique<LaxWendroff>(),
+    BurgersSolver1d gaussian_solver(std::make_unique<Godunov>(),
                                     wiki_config_base, gaussian_function);
 
     gaussian_solver.solve();
 
-    // Save using folder format that plot_wiki.py will expect
+    // Save every 10th step
     std::string v_str = (v == 1.0) ? "1.0" : (v == 0.1) ? "0.1" : "0.01";
-    gaussian_solver.saveSolution("../data_v2", "wiki_gaussian_" + v_str, 10);
+    gaussian_solver.saveSolution("../data", "wiki_gaussian_" + v_str, 10);
 
     std::cout << "Solving N-wave for v=" << v << "...\n";
-    BurgersSolver1d n_wave_solver(std::make_unique<LaxWendroff>(),
-                                  wiki_config_base, n_wave_function);
+    BurgersSolver1d n_wave_solver(std::make_unique<Godunov>(), wiki_config_base,
+                                  n_wave_function);
 
     n_wave_solver.solve();
-    n_wave_solver.saveSolution("../data_v2", "wiki_n_wave_" + v_str, 10);
+    n_wave_solver.saveSolution("../data", "wiki_n_wave_" + v_str, 10);
   }
-
-  // --- PREVIOUS TEST CASES ---
-  std::cout << "\n--- PREVIOUS TEST CASES ---\n";
 
   SolverConfig step_function_config = {.kinematic_viscosity = 0.01,
                                        .time_steps = 2000,
