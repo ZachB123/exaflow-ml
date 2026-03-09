@@ -2,14 +2,13 @@ import json
 import os
 import numpy as np
 import pandas as pd
-from cachetools import LRUCache
+from collections import OrderedDict
 from constants import *
-import pandas as pd
 
 
 class BurgersSolution:
 
-    def __init__(self, sample_name, training_data_dir=DEFAULT_TRAINING_DATA_DIR):
+    def __init__(self, sample_name, training_data_dir=DEFAULT_TRAINING_DATA_DIR, cache_size=128):
 
         self.sample_name = sample_name
         self.sample_dir = os.path.join(training_data_dir, sample_name)
@@ -17,27 +16,26 @@ class BurgersSolution:
         if not os.path.exists(self.sample_dir):
             raise ValueError(f"Sample directory does not exist: {self.sample_dir}")
 
-        metadata_path = os.path.join(self.sample_dir, METADATA_FILENAME)
+        # LRU cache
+        self._cache = OrderedDict()
+        self._cache_maxsize = cache_size
 
-        if not os.path.exists(metadata_path):
-            raise ValueError(f"Metadata file not found: {metadata_path}")
+        # get solution files
+        self.solution_bin_path = os.path.join(self.sample_dir, SOLUTION_DATA_FILENAME)
+        self.metadata_path = os.path.join(self.sample_dir, METADATA_FILENAME)
 
-        with open(metadata_path, 'r') as f:
+        if not os.path.exists(self.solution_bin_path):
+            raise ValueError(f"Binary solution file not found: {self.solution_bin_path}")
+
+        if not os.path.exists(self.metadata_path):
+            raise ValueError(f"Binary solution metadata file not found: {self.metadata_path}")
+
+        # Parse solution metadata (JSON)
+        with open(self.metadata_path, "r") as f:
             self.metadata = json.load(f)
 
         self.config = self.metadata[CONFIG_KEY]
         self.solver = self.metadata[SOLVER_KEY]
-
-        self.domain_length = (self.solver[NUM_DOMAIN_POINTS_KEY] - 1) * self.solver[SPATIAL_STEP_SIZE_KEY]
-
-        self.spatial_step_size = self.solver[SPATIAL_STEP_SIZE_KEY]
-        self.num_domain_points = self.solver[NUM_DOMAIN_POINTS_KEY]
-        self.time_steps = self.solver[TIME_STEPS_KEY]
-        self.time_step_size = self.solver[TIME_STEP_SIZE_KEY]
-        self.max_time = (self.time_steps - 1) * self.time_step_size
-
-        # Bounded LRU cache (stores most recently used timesteps)
-        self._cache = LRUCache(maxsize=128)
 
         try:
             bias = float(self.metadata[BIAS_KEY])
@@ -66,6 +64,26 @@ class BurgersSolution:
             ),
         }
 
+        self.time_steps = int(self.metadata[SOLVER_KEY][TIME_STEPS_KEY])
+        self.time_step_size = float(self.metadata[SOLVER_KEY][TIME_STEP_SIZE_KEY])
+        self.max_time = (self.time_steps - 1) * self.time_step_size
+
+        self.spatial_step_size = float(self.metadata[SOLVER_KEY][SPATIAL_STEP_SIZE_KEY])
+        self.num_domain_points = int(self.metadata[SOLVER_KEY][NUM_DOMAIN_POINTS_KEY])
+        self.domain_length = float(self.num_domain_points - 1) * self.spatial_step_size
+
+        # Memory mapped solution array
+        self._u = np.memmap(
+            self.solution_bin_path,
+            dtype=np.float64,
+            mode="r",
+            shape=(self.time_steps, self.num_domain_points)
+        )
+
+        # Spatial grid
+        self._x_array = self.spatial_step_size * np.arange(self.num_domain_points)
+
+
     def initial_condition(self, x):
         if x < 0 or x > self.domain_length:
             raise ValueError(
@@ -85,33 +103,35 @@ class BurgersSolution:
             )
         )
 
+
     def get_time_step(self, time_step_index):
 
+        # Bounds check
         if time_step_index < 0 or time_step_index >= self.time_steps:
             raise ValueError(
                 f"Time step index {time_step_index} out of bounds "
                 f"[0, {self.time_steps - 1}]"
             )
 
-        # Check cache first
-        cached = self._cache.get(time_step_index)
-        if cached is not None:
-            return cached
+        # Cache hit
+        if time_step_index in self._cache:
+            self._cache.move_to_end(time_step_index)
+            return self._cache[time_step_index]
 
-        csv_filename = CSV_FILENAME_FORMAT.format(time_step_index)
-        csv_path = os.path.join(self.sample_dir, csv_filename)
-
-        if not os.path.exists(csv_path):
-            raise FileNotFoundError(f"CSV file not found: {csv_path}")
-
-        data = np.loadtxt(csv_path, delimiter=",", skiprows=1)
-        x_array = data[:, 0]
-        u_array = data[:, 1]
+        # Load from memmap
+        u_array = self._u[time_step_index, :].copy()
+        x_array = self._x_array
 
         # Store in cache
         self._cache[time_step_index] = (x_array, u_array)
+        self._cache.move_to_end(time_step_index)
+
+        # Evict least recently used
+        if len(self._cache) > self._cache_maxsize:
+            self._cache.popitem(last=False)
 
         return x_array, u_array
+
 
     def requires_artificial_viscosity_generator(self):
 
@@ -120,7 +140,6 @@ class BurgersSolution:
             x_t, u_t = self.get_time_step(t_index)
 
             for i in range(self.num_domain_points - 1):
-
                 ux = (
                     (u_t[i + 1] - u_t[self.num_domain_points - 2]) / (2.0 * self.spatial_step_size)
                     if i == 0
@@ -135,8 +154,10 @@ class BurgersSolution:
                 else:
                     yield None
 
+
     def _interpolate_spatial(self, x, x_array, u_array):
         return np.interp(x, x_array, u_array)
+
 
     def get_u(self, x, t):
 
@@ -185,8 +206,10 @@ class BurgersSolution:
 
         return u_lower * (1 - weight) + u_upper * weight
 
+
     def clear_cache(self):
         self._cache.clear()
+
 
     def __repr__(self):
         return (
