@@ -16,13 +16,17 @@ void calculateNextU(const std::vector<std::vector<double>>& u, std::vector<std::
             double artificial_viscosity = calculateArtificialViscosity(u, cq, dx, dy, i, j, nx, ny);
 
             u_next[i][j] = u[i][j] - u[i][j] * dt * (du_dx + du_dy) + (nu + artificial_viscosity) * dt * (d2u_dx2 + d2u_dy2);
-                
         }
     }
-
 }
 
-double calculateArtificialViscosity(const std::vector<std::vector<double>>& u, double cq, double dx, double dy, int i, int j, int nx, int ny) {
+double calculateArtificialViscosity(
+    const std::vector<std::vector<double>>& u, double cq, double dx, double dy, int i, int j, int nx, int ny) {
+    double ux = (u[i + 1][j] - u[i - 1][j]) / (2.0 * dx);
+    double uy = (u[i][j + 1] - u[i][j - 1]) / (2.0 * dy);
 
-    
+    double compression = ux + uy;
+    double artificial_viscosity = (compression < 0) ? cq * (dx * dx + dy * dy) * std::abs(compression) : 0.0;
+
+    return artificial_viscosity;    
 }
