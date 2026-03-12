@@ -42,18 +42,9 @@ def load_frames(data_dir):
         files = [f"timestep_{i:05d}.csv" for i in range(num_timesteps)]
         return x, frames, files
     else:
-        # Fallback: load CSVs
-        files = sorted(glob.glob(os.path.join(data_dir, "timestep_*.csv")))
-        if not files:
-            raise ValueError(f"No timestep_*.csv files found in {data_dir}")
-        frames = []
-        x = None
-        for f in files:
-            data = np.loadtxt(f, delimiter=",", skiprows=1)
-            if x is None:
-                x = data[:, 0]
-            frames.append(data[:, 1])
-        return x, frames, files
+        # no fallback to csv's
+        raise ValueError(f"Missings files in {data_dir}")
+
  
 def resolve_folder(folder_name):
     # Resolves the folder path for a given sample name or relative path.
