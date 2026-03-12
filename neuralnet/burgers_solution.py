@@ -15,13 +15,13 @@ class BurgersSolution:
         if not os.path.exists(self.sample_dir):
             raise ValueError(f"Sample directory does not exist: {self.sample_dir}")
 
-        self._cache = {}
-
         # get solution files
         self.solution_bin_path = os.path.join(self.sample_dir, SOLUTION_DATA_FILENAME)
         self.metadata_path = os.path.join(self.sample_dir, METADATA_FILENAME)
+
         if not os.path.exists(self.solution_bin_path):
             raise ValueError(f"Binary solution file not found: {self.solution_bin_path}")
+
         if not os.path.exists(self.metadata_path):
             raise ValueError(f"Binary solution metadata file not found: {self.metadata_path}")
 
@@ -78,7 +78,7 @@ class BurgersSolution:
         self.num_domain_points = int(self.metadata[SOLVER_KEY][NUM_DOMAIN_POINTS_KEY])
         self.domain_length = float(self.num_domain_points - 1) * self.spatial_step_size
 
-        # Memory-mapped 2D array; does not load everything into RAM, only time steps as requested
+        # Memory mapped solution array — OS page cache handles caching automatically
         self._u = np.memmap(
             self.solution_bin_path,
             dtype=np.float64,
@@ -86,7 +86,7 @@ class BurgersSolution:
             shape=(self.time_steps, self.num_domain_points)
         )
 
-        # x_array will be the same for all time steps, generate now to return with get_time_step_data()
+        # Spatial grid
         self._x_array = self.spatial_step_size * np.arange(self.num_domain_points)
 
 
@@ -111,29 +111,18 @@ class BurgersSolution:
 
 
     def get_time_step(self, time_step_index):
-        
-        # Check cache first
-        if time_step_index in self._cache:
-            return self._cache[time_step_index]
 
-        # Check bounds
         if time_step_index < 0 or time_step_index >= self.time_steps:
             raise ValueError(
                 f"Time step index {time_step_index} out of bounds "
                 f"[0, {self.time_steps - 1}]"
             )
 
-        # Pull u from memmap
-        u_array = self._u[time_step_index, :].copy()
-
-        x_array = self._x_array
-        
-        self._cache[time_step_index] = (x_array, u_array)
-        return x_array, u_array
+        return self._x_array, self._u[time_step_index, :]
 
 
     def requires_artificial_viscosity_generator(self):
-        # lists the points that require artificial viscosity to make stable
+
         for t_index in range(self.time_steps):
 
             x_t, u_t = self.get_time_step(t_index)
@@ -153,11 +142,13 @@ class BurgersSolution:
                 else:
                     yield None
 
+
     def _interpolate_spatial(self, x, x_array, u_array):
         return np.interp(x, x_array, u_array)
 
 
     def get_u(self, x, t):
+
         if x < 0 or x > self.domain_length:
             raise ValueError(
                 f"x={x} is out of domain bounds [0, {self.domain_length}]"
@@ -202,10 +193,6 @@ class BurgersSolution:
         weight = (t - t_lower) / (t_upper - t_lower)
 
         return u_lower * (1 - weight) + u_upper * weight
-
-
-    def clear_cache(self):
-        self._cache.clear()
 
 
     def __repr__(self):
