@@ -13,50 +13,36 @@
     - No artificial viscosity
 */
 
-void Godunov::calculateNextU(const std::vector<double>& u, std::vector<double>& u_next, double /*cq (unused)*/, int n /* size data array */, double dt, double dx, double kinematic_viscosity) {
-     /* 1) Compute all interface fluxes F[i] = F_{i+1/2}
-         There are N-1 physical cells (last point duplicates first
-         for periodicity), so N-1 interfaces.
-         F[i] corresponds to interface between cell i and i+1.
-      */
-
+void Godunov::calculateNextU(const std::vector<double>& u, std::vector<double>& u_next, double /*cq (unused)*/, int n /* size data array */, double dt, double dx, double nu /* kinematic_viscosity */)
+{
+    // Interfaces: between i and i+1 for i=0..n-3, plus periodic interface (n-2, 0)
     std::vector<double> F(n - 1);
 
     for (int i = 0; i < n - 2; ++i) {
         F[i] = godunovFlux(u[i], u[i + 1]);
     }
+    F[n - 2] = godunovFlux(u[n - 2], u[0]);  // periodic interface
 
-    // Periodic interface between last physical cell and first
-    F[n - 2] = godunovFlux(u[n - 2], u[0]);
-
-     /* 2) Update interior cells using conservative flux difference
-         u_i^{n+1} =
-             u_i^n
-             - (dt/dx)(F_{i+1/2} - F_{i-1/2})
-             + nu dt/dx^2 (u_{i+1} - 2u_i + u_{i-1})
-      */
-
-    for (int i = 1; i < n - 1; ++i) {
-
-        int ip = (i == n - 2) ? 0 : i + 1;  // periodic forward
+    // Update ALL physical cells: i = 0..n-2
+    for (int i = 0; i <= n - 2; ++i) {
+        int ip = (i == n - 2) ? 0     : i + 1;
         int im = (i == 0)     ? n - 2 : i - 1;
 
-        double convective =
-            - (dt / dx) * (F[i] - F[i - 1]);
+        // Right interface flux is F[i]
+        double F_right = (i == n - 2) ? F[n - 2] : F[i];
+        // Left interface flux is F[i-1], except for i=0 where it’s the periodic interface
+        double F_left  = (i == 0)     ? F[n - 2] : F[i - 1];
 
-        double diffusion =
-            kinematic_viscosity * dt / (dx * dx)
-            * (u[ip] - 2.0 * u[i] + u[im]);
+        double convective = -(dt / dx) * (F_right - F_left);
+
+        double diffusion  = nu * dt / (dx * dx) * (u[ip] - 2.0 * u[i] + u[im]);
 
         u_next[i] = u[i] + convective + diffusion;
     }
 
-    // 3) Periodic boundary enforcement (Last entry duplicates first)
-
-    u_next[0] = u_next[n - 2];
+    // Enforce periodic duplicate point for convenience
     u_next[n - 1] = u_next[0];
 }
-
 
 // Exact Godunov flux for Burgers equation
 // Solves Riemann problem between states uLeft and uRight, returns physical flux f(u*) at interface

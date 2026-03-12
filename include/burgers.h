@@ -21,7 +21,7 @@ class BurgersSolver1d : public IMetadataProvider {
 
 private:
     // used for calculating spatial step size and number of domain points
-    inline static const double ALPHA = 0.9;
+    inline static const double ALPHA = 0.4; // Empirically proven alpha bound
 
     // scheme for solving
     std::unique_ptr<BurgerScheme> scheme;
