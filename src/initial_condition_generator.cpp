@@ -2,9 +2,6 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-#include <filesystem>
-#include <fstream>
-#include <limits>
 
 
 #include "initial_condition_generator.h"
@@ -25,7 +22,6 @@ RandomInitialCondition::RandomInitialCondition(const RandomInitialConditionConfi
     double vertical_shift = 0.0;
 
     for (int i = 0; i < config.n; i++) {
-
         double current_amplitude = amplitude_distribution(rng);
         double current_phase_shift = phase_shift_distribution(rng);
         double current_frequency;
@@ -60,66 +56,27 @@ double RandomInitialCondition::operator()(double x) const {
     return sum;
 }
 
-
-void RandomInitialCondition::saveMetadataJSON(const std::filesystem::path& base_path,
-                                              const std::filesystem::path& sample_folder,
-                                              int time_steps,
-                                              double time_step_size,
-                                              int num_domain_points,
-                                              double spatial_step_size,
-                                              const std::string& scheme_name) const
-{
-    std::filesystem::path folder = base_path / sample_folder;
-
-    // Create directory tree if not exists
-    std::filesystem::create_directories(folder);
-
-    std::filesystem::path filepath = folder / "metadata.json";
-
-    std::ofstream file(filepath);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open metadata file: " << filepath << std::endl;
-        return;
+void RandomInitialCondition::appendMetadata(nlohmann::json& metadata) const {
+    metadata["config"] = {
+        {"n", config.n},
+        {"domain_length", config.domain_length},
+        {"amp_min", config.amp_min},
+        {"amp_max", config.amp_max},
+        {"frequency_multiplier_min", config.frequency_multiplier_min},
+        {"frequency_multiplier_max", config.frequency_multiplier_max},
+        {"wrap_around_frequency_multiplier_min", config.wrap_around_frequency_multiplier_min},
+        {"wrap_around_frequency_multiplier_max", config.wrap_around_frequency_multiplier_max}
+    };
+    nlohmann::json terms_array = nlohmann::json::array();
+    for (const Term& term : terms) {
+        terms_array.push_back({
+            {"amplitude", term.amplitude},
+            {"frequency", term.frequency},
+            {"phase_shift", term.phase_shift}
+        });
     }
-
-    file << std::setprecision(std::numeric_limits<double>::max_digits10);
-
-    file << "{\n";
-    file << "  \"config\": {\n";
-    file << "    \"n\": " << config.n << ",\n";
-    file << "    \"domain_length\": " << config.domain_length << ",\n";
-    file << "    \"amp_min\": " << config.amp_min << ",\n";
-    file << "    \"amp_max\": " << config.amp_max << ",\n";
-    file << "    \"frequency_multiplier_min\": " << config.frequency_multiplier_min << ",\n";
-    file << "    \"frequency_multiplier_max\": " << config.frequency_multiplier_max << ",\n";
-    file << "    \"wrap_around_frequency_multiplier_min\": " << config.wrap_around_frequency_multiplier_min << ",\n";
-    file << "    \"wrap_around_frequency_multiplier_max\": " << config.wrap_around_frequency_multiplier_max << "\n";
-    file << "  },\n\n";
-
-    file << "  \"terms\": [\n";
-    for (size_t i = 0; i < terms.size(); ++i) {
-        const auto& t = terms[i];
-        file << "    {\n";
-        file << "      \"amplitude\": " << t.amplitude << ",\n";
-        file << "      \"frequency\": " << t.frequency << ",\n";
-        file << "      \"phase_shift\": " << t.phase_shift << "\n";
-        if (i + 1 < terms.size())
-            file << "    },\n";
-        else
-            file << "    }\n";
-    }
-    file << "  ],\n\n";
-
-    file << "  \"bias\": " << bias << ",\n\n";
-
-    file << "  \"solver\": {\n";
-    file << "    \"time_steps\": " << time_steps << ",\n";
-    file << "    \"time_step_size\": " << time_step_size << ",\n";
-    file << "    \"num_domain_points\": " << num_domain_points << ",\n";
-    file << "    \"spatial_step_size\": " << spatial_step_size << ",\n";
-    file << "    \"scheme_name\": \"" << scheme_name << "\"\n";
-    file << "  }\n";
-    file << "}\n";
+    metadata["terms"] = terms_array;
+    metadata["bias"] = bias;
 }
 
 std::string RandomInitialCondition::toString() const {

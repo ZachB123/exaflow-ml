@@ -6,6 +6,7 @@
 #include <functional>
 #include <iostream>
 #include <vector>
+#include "metadata_writer.h"
 
 int main() {
   // --- WIKIPEDIA TEST CASES ---
@@ -75,10 +76,10 @@ int main() {
   BurgersSolver1d step_function_solver(std::make_unique<Godunov>(),
                                        step_function_config, step_function);
 
-  step_function_solver.solve();
-  step_function_solver.saveSolution("../data", "step_function", 1);
-  std::cout << "step function was nan detected: "
-            << step_function_solver.wasNanDetected() << std::endl;
+    step_function_solver.solve();
+    step_function_solver.saveBinarySolution("../data", "step_function");
+    MetadataWriter(step_function_solver).write("../data/step_function/metadata.json");
+    std::cout << "step function was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
   SolverConfig sine_wave_config = {.kinematic_viscosity = 0.01,
                                    .time_steps = 5000,
@@ -93,14 +94,15 @@ int main() {
   BurgersSolver1d solver(std::make_unique<Godunov>(), sine_wave_config,
                          sine_function);
 
-  solver.solve();
-  solver.saveSolution("../data", "sine_wave", 1);
-  std::cout << "sine wave was nan detected: "
-            << step_function_solver.wasNanDetected() << std::endl;
+    solver.solve();
+    solver.saveBinarySolution("../data", "sine_wave");
+    MetadataWriter(solver).write("../data/sine_wave/metadata.json");
+    std::cout << "sine wave was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
-  RandomInitialConditionConfig functionConfig;
-  RandomInitialCondition f(functionConfig, false, true);
-  std::cout << f.toString() << std::endl;
+    
+    RandomInitialConditionConfig functionConfig;
+    RandomInitialCondition f(functionConfig, false, true);
+    std::cout << f.toString() << std::endl;
 
   SolverConfig random_function_config = {
       .kinematic_viscosity = 0.01,
@@ -112,8 +114,9 @@ int main() {
   BurgersSolver1d random_function_solver(std::make_unique<Godunov>(),
                                          random_function_config, f);
 
-  random_function_solver.solve();
-  random_function_solver.saveSolution("../data", "random_function", 1);
-  std::cout << "random function was nan detected: "
-            << step_function_solver.wasNanDetected() << std::endl;
+    random_function_solver.solve();
+    random_function_solver.saveBinarySolution("../data", "random_function");
+    MetadataWriter(random_function_solver, f).write("../data/random_function/metadata.json");
+    std::cout << "random function was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
+
 }

@@ -1,8 +1,10 @@
 #pragma once
 #include <functional>
 #include <vector>
+#include <memory>
 
 #include "burger_scheme.h"
+#include "metadata_writer.h"
 
 struct SolverConfig {
     // viscosity coefficient for viscous burgers
@@ -15,7 +17,7 @@ struct SolverConfig {
     double time_step_size;
 };
 
-class BurgersSolver1d {
+class BurgersSolver1d : public IMetadataProvider {
 
 private:
     // used for calculating spatial step size and number of domain points
@@ -73,7 +75,11 @@ public:
 
     std::vector<std::vector<double>> getSolution() const;
 
-    void saveSolution(const std::string& base_folder, const std::string& run_name, int gap) const;
+    // Writes the solve to to solution.bin in the folder
+    // Metadata is written separately use MetadataWriter with this object as a provider
+    void saveBinarySolution(const std::string& base_folder, const std::string& run_name) const;
+
+    void appendMetadata(nlohmann::json& metadata) const override;
 
     bool wasNanDetected() const;
 
