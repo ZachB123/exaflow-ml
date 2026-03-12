@@ -9,6 +9,8 @@
 struct SolverConfig {
     // viscosity coefficient for viscous burgers
     double kinematic_viscosity;
+    // Reynolds number used to derive kinematic viscosity; 0 if not set via Re
+    int reynolds_number = 0;
     // how many iterations we will simulate
     int time_steps;
     // how long is the x axis are equation is defined on
@@ -28,7 +30,10 @@ private:
 
     // kinematic viscosity as shown in the burgers equation
     const double kinematic_viscosity;
-    
+
+    // Reynolds number used to derive kinematic viscosity; 0 if not set via Re
+    const int reynolds_number;
+
     // how many times will we run our solver
     const int time_steps;
 

@@ -7,6 +7,7 @@
 #include <string>
 #include <cstdlib>
 #include <chrono>
+#include <vector>
 
 #include "initial_condition_generator.h"
 #include "burgers.h"
@@ -21,8 +22,10 @@ const auto SCHEME_FACTORY = []() {
     return std::make_unique<Godunov>();
 };
 
-// constant solver configurations
-const double KINEMATIC_VISCOSITY = 0.01;
+// Reynolds numbers to choose between per sample; kinematic viscosity is then
+// derived as (|maxU| * domain_length) / reynolds_number
+const std::vector<int> REYNOLDS_NUMBERS = {100, 1000};
+
 const int DEFAULT_TIME_STEPS = 10000;
 const double DEFAULT_TIME_STEP_SIZE = 0.00001;
 
@@ -226,9 +229,16 @@ int main(int argc, char* argv[]) {
 
         RandomInitialConditionConfig cfg = generateRandomInitialConditionConfig(current_seed);
         RandomInitialCondition f(cfg, false, true, current_seed);
+        
+        // pick a Reynolds number and derive kinematic viscosity from it
+        std::mt19937 reynolds_rng(current_seed);
+        std::uniform_int_distribution<int> reynolds_index_distribution(0, static_cast<int>(REYNOLDS_NUMBERS.size()) - 1);
+        int reynolds_number = REYNOLDS_NUMBERS[reynolds_index_distribution(reynolds_rng)];
+        double kinematic_viscosity = (f.getMaxAbsoluteValue() * cfg.domain_length) / reynolds_number;
 
         SolverConfig solver_cfg;
-        solver_cfg.kinematic_viscosity = KINEMATIC_VISCOSITY;
+        solver_cfg.kinematic_viscosity = kinematic_viscosity;
+        solver_cfg.reynolds_number = reynolds_number;
         solver_cfg.time_steps = time_steps;
         solver_cfg.domain_length = cfg.domain_length;
         solver_cfg.time_step_size = time_step_size;

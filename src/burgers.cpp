@@ -11,9 +11,10 @@
 
 
 BurgersSolver1d::BurgersSolver1d(std::unique_ptr<BurgerScheme> scheme, const SolverConfig& config)
-    :   
+    :
         scheme(std::move(scheme)),
         kinematic_viscosity(config.kinematic_viscosity),
+        reynolds_number(config.reynolds_number),
         time_steps(config.time_steps),
         domain_length(config.domain_length),
         time_step_size(config.time_step_size),
@@ -26,9 +27,10 @@ BurgersSolver1d::BurgersSolver1d(
     const SolverConfig& config,
     const std::function<double(double)>& initial_conditions
 )
-    :   
+    :
         scheme(std::move(scheme)),
         kinematic_viscosity(config.kinematic_viscosity),
+        reynolds_number(config.reynolds_number),
         time_steps(config.time_steps),
         domain_length(config.domain_length),
         time_step_size(config.time_step_size),
@@ -170,6 +172,7 @@ void BurgersSolver1d::appendMetadata(nlohmann::json& metadata) const {
         {"spatial_step_size", most_recent_spatial_step_size},
         {"domain_length", domain_length},
         {"kinematic_viscosity", kinematic_viscosity},
+        {"reynolds_number", reynolds_number},
         {"scheme_name", scheme->getName()}
     };
 }
