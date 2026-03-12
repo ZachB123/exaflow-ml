@@ -4,7 +4,8 @@
 #include <filesystem>
 #include <iomanip>
 #include <sstream>
-#include <cmath>  
+#include <cmath>
+#include <string>
 
 #include "burgers.h"
 
@@ -117,7 +118,7 @@ std::vector<std::vector<double>> BurgersSolver1d::getSolution() const {
     return solution_history;
 }
 
-void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::string& run_name, int gap) const {
+void BurgersSolver1d::saveBinarySolution(const std::string& base_folder, const std::string& run_name) const {
 
     if (!std::filesystem::exists(base_folder)) {
         std::filesystem::create_directory(base_folder);
@@ -130,36 +131,47 @@ void BurgersSolver1d::saveSolution(const std::string& base_folder, const std::st
         std::filesystem::remove_all(run_folder); // delete everything inside
     }
     std::filesystem::create_directory(run_folder);
-
     std::cout << "Writing results to: " << run_folder << std::endl;
 
-    // Write one file per time step
+	// Create and open binary file to hold solution data
+    std::string filename = run_folder + "/solution.bin";
+    std::ofstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file: " << filename << std::endl;
+        return;
+    }
+    std::cout << "Writing binary solution to: " << filename << std::endl;
+
+	// Add solution data to binary file, writing one timestep at a time
     for (size_t t = 0; t < solution_history.size(); ++t) {
 
-        if (t % gap != 0) {
-            continue;
-        }
+        const std::vector<double>& u_t = solution_history[t];
 
-        std::ostringstream filename;
-        filename << run_folder << "/timestep_"
-                 << std::setw(5) << std::setfill('0') << t << ".csv";
+        file.write(
+            reinterpret_cast<const char*>(u_t.data()),
+            u_t.size() * sizeof(double)
+        );
 
-        std::ofstream file(filename.str());
-        if (!file.is_open()) {
-            std::cerr << "Failed to open file: " << filename.str() << std::endl;
-            continue;
-        }
-
-        file << "x,u\n";
-
-        const auto& u_t = solution_history[t];
-        for (int i = 0; i < most_recent_num_domain_points; ++i) {
-            double x = i * most_recent_spatial_step_size;  // compute x-coordinate
-            file << x << "," << u_t[i] << "\n";
+        if (!file) {
+            std::cerr << "Error writing timestep " << t << std::endl;
+            return;
         }
     }
+    file.close();
+    std::cout << "Binary solution written successfully.\n";
 
-    std::cout << "All timesteps written successfully.\n";
+}
+
+void BurgersSolver1d::appendMetadata(nlohmann::json& metadata) const {
+    metadata["solver"] = {
+        {"time_steps", solution_history.size()},
+        {"time_step_size", time_step_size},
+        {"num_domain_points", most_recent_num_domain_points},
+        {"spatial_step_size", most_recent_spatial_step_size},
+        {"domain_length", domain_length},
+        {"kinematic_viscosity", kinematic_viscosity},
+        {"scheme_name", scheme->getName()}
+    };
 }
 
 bool BurgersSolver1d::wasNanDetected() const {
