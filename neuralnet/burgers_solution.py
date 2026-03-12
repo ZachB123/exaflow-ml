@@ -2,23 +2,18 @@ import json
 import os
 import numpy as np
 import pandas as pd
-from collections import OrderedDict
 from constants import *
 
 
 class BurgersSolution:
 
-    def __init__(self, sample_name, training_data_dir=DEFAULT_TRAINING_DATA_DIR, cache_size=128):
+    def __init__(self, sample_name, training_data_dir=DEFAULT_TRAINING_DATA_DIR):
 
         self.sample_name = sample_name
         self.sample_dir = os.path.join(training_data_dir, sample_name)
 
         if not os.path.exists(self.sample_dir):
             raise ValueError(f"Sample directory does not exist: {self.sample_dir}")
-
-        # LRU cache
-        self._cache = OrderedDict()
-        self._cache_maxsize = cache_size
 
         # get solution files
         self.solution_bin_path = os.path.join(self.sample_dir, SOLUTION_DATA_FILENAME)
@@ -72,7 +67,7 @@ class BurgersSolution:
         self.num_domain_points = int(self.metadata[SOLVER_KEY][NUM_DOMAIN_POINTS_KEY])
         self.domain_length = float(self.num_domain_points - 1) * self.spatial_step_size
 
-        # Memory mapped solution array
+        # Memory mapped solution array — OS page cache handles caching automatically
         self._u = np.memmap(
             self.solution_bin_path,
             dtype=np.float64,
@@ -106,31 +101,13 @@ class BurgersSolution:
 
     def get_time_step(self, time_step_index):
 
-        # Bounds check
         if time_step_index < 0 or time_step_index >= self.time_steps:
             raise ValueError(
                 f"Time step index {time_step_index} out of bounds "
                 f"[0, {self.time_steps - 1}]"
             )
 
-        # Cache hit
-        if time_step_index in self._cache:
-            self._cache.move_to_end(time_step_index)
-            return self._cache[time_step_index]
-
-        # Load from memmap
-        u_array = self._u[time_step_index, :].copy()
-        x_array = self._x_array
-
-        # Store in cache
-        self._cache[time_step_index] = (x_array, u_array)
-        self._cache.move_to_end(time_step_index)
-
-        # Evict least recently used
-        if len(self._cache) > self._cache_maxsize:
-            self._cache.popitem(last=False)
-
-        return x_array, u_array
+        return self._x_array, self._u[time_step_index, :]
 
 
     def requires_artificial_viscosity_generator(self):
@@ -205,10 +182,6 @@ class BurgersSolution:
         weight = (t - t_lower) / (t_upper - t_lower)
 
         return u_lower * (1 - weight) + u_upper * weight
-
-
-    def clear_cache(self):
-        self._cache.clear()
 
 
     def __repr__(self):

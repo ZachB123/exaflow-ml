@@ -1,7 +1,7 @@
 import argparse
 import json
 import os
-
+import glob
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.widgets as widgets
@@ -9,12 +9,12 @@ import matplotlib.widgets as widgets
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
+SEARCH_DIRS = ["training_data", "data"]
+
 
 def load_frames(data_dir):
     """
-    Loads Burgers solution from:
-      - metadata.json
-      - solution.bin
+    Loads Burgers solution from metadata.json and solution.bin
 
     Returns:
         x: np.array of shape (N,)
@@ -52,14 +52,47 @@ def load_frames(data_dir):
     return x, frames, frame_labels
 
 
+def resolve_folder(folder_name):
+    # Resolves the folder path for a given sample name or relative path.
+    # If folder_name is an integer, treat as sample_XXXXXX in training_data
+    if folder_name.isdigit():
+        sample_name = f"sample_{int(folder_name):06d}"
+        candidate = os.path.join(PROJECT_ROOT, "training_data", sample_name)
+        if os.path.isdir(candidate):
+            return candidate
+        raise FileNotFoundError(f"Could not find folder 'sample_{int(folder_name):06d}' in training_data.")
+    if os.path.sep in folder_name:
+        candidate = os.path.join(PROJECT_ROOT, folder_name)
+        if os.path.isdir(candidate):
+            return candidate
+        raise FileNotFoundError(f"Folder not found: {folder_name}")
+    # abstract search locations into a list in case we add more locations later
+    candidates = []
+    for search_dir in SEARCH_DIRS:
+        candidate = os.path.join(PROJECT_ROOT, search_dir, folder_name)
+        if os.path.isdir(candidate):
+            candidates.append(candidate)
+    if len(candidates) == 1:
+        return candidates[0]
+    elif len(candidates) > 1:
+        print(f"Error: Multiple folders found for '{folder_name}':")
+        for idx, c in enumerate(candidates):
+            print(f"  [{idx+1}] {c}")
+        print("Please specify the full path to the folder you want to visualize.")
+        return None
+    else:
+        raise FileNotFoundError(f"Could not find folder '{folder_name}' in any of: {', '.join(SEARCH_DIRS)}.")
+
+
 def run_visualizer(folder_name, initial_speed):
-    data_dir = os.path.join(PROJECT_ROOT, folder_name)
+    data_dir = resolve_folder(folder_name)
+    if data_dir is None:
+        return
     x, frames, frame_labels = load_frames(data_dir)
 
     fig, ax = plt.subplots()
     fig.canvas.manager.set_window_title(f"Burgers Visualizer – {folder_name}")
     plt.subplots_adjust(bottom=0.25)
-
     line, = ax.plot(x, frames[0])
     ax.set_title(f"{frame_labels[0]}   (frame 0)")
 
@@ -101,9 +134,7 @@ def run_visualizer(folder_name, initial_speed):
             ax.set_ylim(current_ylim)
         else:
             update_plot()
-
         fig.canvas.draw_idle()
-
     lock_cb.on_clicked(on_toggle_lock)
 
     def next_frame(event):
@@ -125,7 +156,6 @@ def run_visualizer(folder_name, initial_speed):
             frame_pos = 0.0
             frame_idx = 0
             update_plot()
-
         playing = not playing
         play_button.label.set_text("Pause" if playing else "Play")
         fig.canvas.draw_idle()
@@ -148,14 +178,12 @@ def run_visualizer(folder_name, initial_speed):
     axreset = plt.axes([0.40, 0.1, 0.12, 0.075])
     axnext = plt.axes([0.55, 0.1, 0.1, 0.075])
     axspeed = plt.axes([0.74, 0.1, 0.15, 0.04])
-    
-    
+
     prev_button = widgets.Button(axprev, "Prev")
     play_button = widgets.Button(axplay, "Play")
     reset_button = widgets.Button(axreset, "Reset")
     next_button = widgets.Button(axnext, "Next")
     speed_slider = widgets.Slider(axspeed, "Speed", 0.1, 50.0, valinit=speed)
-
     prev_button.on_clicked(prev_frame)
     next_button.on_clicked(next_frame)
     play_button.on_clicked(play_pause)
@@ -168,7 +196,6 @@ def run_visualizer(folder_name, initial_speed):
         nonlocal frame_pos, frame_idx, playing
         if not playing:
             return
-
         frame_pos += speed
 
         if frame_pos >= len(frames) - 1:
@@ -183,10 +210,8 @@ def run_visualizer(folder_name, initial_speed):
 
         frame_idx = int(frame_pos)
         update_plot()
-
     timer.add_callback(on_timer)
     timer.start()
-
     plt.show()
 
 
@@ -195,7 +220,7 @@ def main():
     parser.add_argument(
         "folder",
         type=str,
-        help="Folder path relative to project root, e.g. data/step_function",
+        help="Sample name (e.g. sample_000000), integer (e.g. 5), or folder path. Searches training_data/ and data/",
     )
     parser.add_argument(
         "--speed",
@@ -203,9 +228,12 @@ def main():
         default=1,
         help="Initial playback speed (frames per tick)",
     )
-
     args = parser.parse_args()
-    run_visualizer(args.folder, args.speed)
+    try:
+        run_visualizer(args.folder, args.speed)
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        exit(1)
 
 
 if __name__ == "__main__":
