@@ -1,10 +1,9 @@
-from pathlib import Path
 import numpy as np
-import matplotlib.pyplot as plt
 from tqdm import tqdm
+import joblib
 from multiprocessing import Pool, cpu_count
-from tqdm.contrib.concurrent import process_map
 
+from nn import train_model
 from constants import *
 from burgers_solution import BurgersSolution
 
@@ -28,7 +27,7 @@ def verify_initial_condition_reconstruction(sample):
 
 
 def get_training_data_folder_names():
-    return sorted([item.name for item in DEFAULT_TRAINING_DATA_DIR.iterdir() if item.is_dir()])
+    return sorted([item.name for item in DEFAULT_TRAINING_DATA_DIR.iterdir() if item.is_dir() and (item / METADATA_FILENAME).exists()])
 
 
 def requires_artificial_viscosity(dx, u_i_minus_1, u_i_plus_1):
@@ -39,12 +38,25 @@ def requires_artificial_viscosity(dx, u_i_minus_1, u_i_plus_1):
 # def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0, eps=1e-3):
 #     uxx = u_i_plus_1 - 2*u_i + u_i_minus_1
 #     ux_diff = abs(u_i_plus_1 - u_i_minus_1)
-
+#
 #     if abs(uxx) < eps or ux_diff < eps:
 #         return None
-
+#
 #     return (2 / (dx * ux_diff)) * ((dx**2 / (dt * uxx)) * (u_next_i - u_i + u_i * (dt/dx) * (u_i_plus_1 - u_i_minus_1)) - nu)
 
+
+# def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):
+#     # todo store nu in the metadata
+#     # sometimes got divide by 0
+#     uxx = (u_i_plus_1 - 2 * u_i + u_i_minus_1)
+#     if uxx == 0:
+#         return None
+#
+#     ux_diff = abs(u_i_plus_1 - u_i_minus_1)
+#     if ux_diff == 0:
+#         return None
+#
+#     return (2 / (dx * ux_diff)) * ((dx**2 / (dt * uxx)) * (u_next_i - u_i + u_i * (dt/dx) * (u_i_plus_1 - u_i_minus_1)) - nu)
 
 def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):
     # todo store nu in the metadata
@@ -53,7 +65,6 @@ def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):
         return None
 
     return (2 / (dx * abs(u_i_plus_1 - u_i_minus_1))) * ((dx**2 / (dt * (u_i_plus_1 - 2 * u_i + u_i_minus_1))) * (u_next_i - u_i + u_i * (dt/dx) * (u_i_plus_1 - u_i_minus_1)) - nu)
-
 
 def get_feature_matrices_for_sample(sample_name):
     X_rows = []
@@ -66,13 +77,12 @@ def get_feature_matrices_for_sample(sample_name):
     coarse_dx = fine_dx * COARSENESS_MULTIPLIER
     coarse_num_timesteps = int(burgers_solution.max_time // coarse_dt)
     coarse_num_domain_points = int(burgers_solution.domain_length // coarse_dx)
-    
-    print(fine_dt, fine_dx, coarse_dt, coarse_dx, coarse_num_timesteps, coarse_num_domain_points)
 
-    for time_step in range(min(coarse_num_timesteps, 2)):
+    # Collect data from multiple timesteps
+    for time_step in range(min(coarse_num_timesteps, 50)):
         # just ignoring the boundary condition for now cuz I need to ask yuvi about it
         # and it probably won't make a difference for training
-        for spatial_step in range(1, coarse_num_domain_points):
+        for spatial_step in range(1, coarse_num_domain_points - 1):
             curr_time = time_step * coarse_dt
             next_time = (time_step + 1) * coarse_dt
             curr_x = spatial_step * coarse_dx
@@ -86,8 +96,10 @@ def get_feature_matrices_for_sample(sample_name):
 
             if requires_artificial_viscosity(coarse_dx, u_i_minus_1, u_i_plus_1):
                 cq = reverse_engineer_cq(coarse_dt, coarse_dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1)
-                if cq is not None:
-                    # print(cq)
+                if cq is not None and not np.isnan(cq) and not np.isinf(cq):
+                    # cq = np.clip(cq, -100, 100)
+                    # if abs(cq) > 1000000000:
+                    #     print(cq)
                     # we can't use u_next_i as a feature because we will never have that when running the sim normally
                     X_rows.append([coarse_dt, coarse_dx, u_i, u_i_minus_1, u_i_plus_1])
                     y_rows.append(cq)
@@ -100,16 +112,14 @@ def get_feature_matrices_for_sample(sample_name):
 if __name__ == "__main__":
     samples = get_training_data_folder_names()
 
+    print(f"Found {len(samples)} samples. Extracting features...")
     with Pool(processes=cpu_count()) as pool:
         results = pool.map(get_feature_matrices_for_sample, samples)
 
     X_matrices, y_matrices = zip(*results)
 
-    X = np.vstack(X_matrices)
-    y = np.concatenate(y_matrices)
+    X = np.vstack([m for m in X_matrices if m.size > 0])
+    y = np.concatenate([m for m in y_matrices if m.size > 0])
 
-    print(f"cq mean: {y.mean()}, cq std: {y.std()}")
-
-
-
+    model, X_scaler = train_model(X, y)
 
