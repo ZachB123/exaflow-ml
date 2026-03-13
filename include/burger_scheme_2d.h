@@ -19,7 +19,7 @@ class BurgerScheme2D {
                     double time_step_size,
                     double spatial_step_size_x, 
                     double spatial_step_size_y, 
-                    double kinematic_viscosity) = 0
+                    double kinematic_viscosity) = 0;
 
         // get the name of the scheme
         virtual std::string getName() const = 0;
@@ -57,7 +57,7 @@ class FTCS2D : public BurgerScheme2D {
     
     protected:
         double calculateArtificialViscosity(
-            const std::vector<std::vector<double>>& u 
+            const std::vector<std::vector<double>>& u, 
             double cq,
             double spatial_step_size_x,
             double spatial_step_size_y,
@@ -84,7 +84,7 @@ class LaxWendroff2D : public BurgerScheme2D {
     
     protected:
         double calculateArtificialViscosity(
-            const std::vector<std::vector<double>>& u 
+            const std::vector<std::vector<double>>& u,
             double cq,
             double spatial_step_size_x,
             double spatial_step_size_y,
