@@ -56,6 +56,18 @@ double RandomInitialCondition::operator()(double x) const {
     return sum;
 }
 
+double RandomInitialCondition::getMaxAbsoluteValue(int num_sample_points) const {
+    double max_absolute_value = 0.0;
+    for (int i = 0; i < num_sample_points; ++i) {
+        double x = domain_length * i / (num_sample_points - 1);
+        double value = std::abs((*this)(x));
+        if (value > max_absolute_value) {
+            max_absolute_value = value;
+        }
+    }
+    return max_absolute_value;
+}
+
 void RandomInitialCondition::appendMetadata(nlohmann::json& metadata) const {
     metadata["config"] = {
         {"n", config.n},

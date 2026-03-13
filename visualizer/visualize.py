@@ -11,6 +11,10 @@ PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
 SEARCH_DIRS = ["training_data", "data"]
 
+# maximum number of spatial points passed to matplotlib per frame;
+# grids larger than this are downsampled by a uniform stride before display
+MAX_DISPLAY_POINTS = 4000
+
 
 def load_frames(data_dir):
     """
@@ -90,10 +94,13 @@ def run_visualizer(folder_name, initial_speed):
         return
     x, frames, frame_labels = load_frames(data_dir)
 
+    display_stride = max(1, len(x) // MAX_DISPLAY_POINTS)
+    x_display = x[::display_stride]
+
     fig, ax = plt.subplots()
     fig.canvas.manager.set_window_title(f"Burgers Visualizer – {folder_name}")
     plt.subplots_adjust(bottom=0.25)
-    line, = ax.plot(x, frames[0])
+    line, = ax.plot(x_display, frames[0, ::display_stride])
     ax.set_title(f"{frame_labels[0]}   (frame 0)")
 
     frame_pos = 0.0
@@ -105,7 +112,7 @@ def run_visualizer(folder_name, initial_speed):
     y_margin_frac = 0.05
 
     def update_plot():
-        line.set_ydata(frames[frame_idx])
+        line.set_ydata(frames[frame_idx, ::display_stride])
         ax.set_title(f"{frame_labels[frame_idx]}   (frame {frame_idx})")
 
         if not y_lock:
@@ -183,7 +190,7 @@ def run_visualizer(folder_name, initial_speed):
     play_button = widgets.Button(axplay, "Play")
     reset_button = widgets.Button(axreset, "Reset")
     next_button = widgets.Button(axnext, "Next")
-    speed_slider = widgets.Slider(axspeed, "Speed", 0.1, 50.0, valinit=speed)
+    speed_slider = widgets.Slider(axspeed, "Speed", 0.1, 100.0, valinit=speed)
     prev_button.on_clicked(prev_frame)
     next_button.on_clicked(next_frame)
     play_button.on_clicked(play_pause)

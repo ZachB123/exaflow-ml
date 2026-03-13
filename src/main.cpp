@@ -14,9 +14,9 @@ int main() {
 
     SolverConfig wiki_config_base = {
         .kinematic_viscosity = 1.0, // Will be overwritten later
-        .time_steps = 125000,
+        .time_steps = 20000,
         .domain_length = 24.0, // longer than shown on wikipedia to prevent like the boundary conditions from messing stuff up
-        .time_step_size = 0.0004
+        .spatial_step_size = 0.01
     };
 
     // Gaussian Initial Condition: u(x,0) = e^(-x^2/2)
@@ -43,7 +43,7 @@ int main() {
 
         gaussian_solver.solve();
 
-        // Save every 10th step
+        std::cout << "gaussian function was nan detected: " << gaussian_solver.wasNanDetected() << std::endl;
         std::string v_str = (v == 1.0) ? "1.0" : (v == 0.1) ? "0.1" : "0.01";
         gaussian_solver.saveBinarySolution("../data", "wiki_gaussian_" + v_str);
         MetadataWriter(gaussian_solver).write("../data/wiki_gaussian_" + v_str + "/metadata.json");
@@ -51,16 +51,17 @@ int main() {
         std::cout << "Solving N-wave for v=" << v << "...\n";
         BurgersSolver1d n_wave_solver(std::make_unique<Godunov>(), wiki_config_base, n_wave_function);
 
+        std::cout << "nwave function was nan detected: " << n_wave_solver.wasNanDetected() << std::endl;
         n_wave_solver.solve();
         n_wave_solver.saveBinarySolution("../data", "wiki_n_wave_" + v_str);
         MetadataWriter(n_wave_solver).write("../data/wiki_n_wave_" + v_str + "/metadata.json");
     }
 
     SolverConfig step_function_config = {
-        .kinematic_viscosity = 0.01, 
-        .time_steps = 2000, 
-        .domain_length = 2.0, 
-        .time_step_size = 0.001
+        .kinematic_viscosity = 0.01,
+        .time_steps = 2000,
+        .domain_length = 2.0,
+        .spatial_step_size = 0.01
     };
 
     // 1 everywhere in domain
@@ -81,10 +82,10 @@ int main() {
     std::cout << "step function was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
     SolverConfig sine_wave_config = {
-        .kinematic_viscosity = 0.01, 
-        .time_steps = 5000, 
-        .domain_length = 2.0 * M_PI, 
-        .time_step_size = 0.001
+        .kinematic_viscosity = 0.01,
+        .time_steps = 5000,
+        .domain_length = 2.0 * M_PI,
+        .spatial_step_size = 0.01
     };
 
     // initial condition: one full sine wave over [0, 2π]
@@ -107,7 +108,7 @@ int main() {
         .kinematic_viscosity = 0.01,
         .time_steps = 10000,
         .domain_length = 10.0,
-        .time_step_size = 0.0001,
+        .spatial_step_size = 0.01,
     };
 
     BurgersSolver1d random_function_solver(std::make_unique<Godunov>(), random_function_config, f);

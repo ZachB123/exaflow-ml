@@ -7,6 +7,7 @@
 #include <string>
 #include <cstdlib>
 #include <chrono>
+#include <vector>
 
 #include "initial_condition_generator.h"
 #include "burgers.h"
@@ -18,13 +19,15 @@ const std::string TRAINING_DIR = "../training_data";
 
 // what scheme we are using for the configuration
 const auto SCHEME_FACTORY = []() {
-    return std::make_unique<Godunov>();
+    return std::make_unique<FTCS>();
 };
 
-// constant solver configurations
-const double KINEMATIC_VISCOSITY = 0.01;
+// Reynolds numbers to choose between per sample; kinematic viscosity is then
+// derived as (|maxU| * domain_length) / reynolds_number
+const std::vector<int> REYNOLDS_NUMBERS = {100, 1000};
+
 const int DEFAULT_TIME_STEPS = 10000;
-const double DEFAULT_TIME_STEP_SIZE = 0.0001;
+const double DEFAULT_SPATIAL_STEP_SIZE = 0.01;
 
 // n (number of terms)
 const int N_MIN = 1;
@@ -125,10 +128,10 @@ void deleteExistingSamples() {
     }
 }
 
-void parseCommandLineArguments(int argc, char* argv[], int& num_samples, bool& append_mode, int& time_steps, double& time_step_size, unsigned int &seed) {
+void parseCommandLineArguments(int argc, char* argv[], int& num_samples, bool& append_mode, int& time_steps, double& spatial_step_size, unsigned int &seed) {
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        
+
         if (arg == "--samples" || arg == "-s") {
             if (i + 1 >= argc) {
                 std::cerr << "Error: " << arg << " requires a value\n";
@@ -144,13 +147,13 @@ void parseCommandLineArguments(int argc, char* argv[], int& num_samples, bool& a
         else if (arg == "--append" || arg == "-a") {
             append_mode = true;
         }
-        else if (arg == "--time-step" || arg == "-ts") {
+        else if (arg == "--spatial-step" || arg == "-ss") {
             if (i + 1 >= argc) {
                 std::cerr << "Error: " << arg << " requires a value\n";
                 std::exit(1);
             }
             try {
-                time_step_size = std::stod(argv[++i]);
+                spatial_step_size = std::stod(argv[++i]);
             } catch (const std::exception& e) {
                 std::cerr << "Error: Invalid value for " << arg << ": " << argv[i] << "\n";
                 std::exit(1);
@@ -183,11 +186,11 @@ void parseCommandLineArguments(int argc, char* argv[], int& num_samples, bool& a
         else {
             std::cerr << "Error: Unknown argument '" << arg << "'\n";
             std::cerr << "Valid arguments:\n";
-            std::cerr << "  --samples, -s <num>          Number of samples to generate\n";
-            std::cerr << "  --append, -a                 Append to existing samples\n";
-            std::cerr << "  --time-step, -ts <value>     Time step size\n";
-            std::cerr << "  --num-time-steps, -nts <num> Number of time steps\n";
-            std::cerr << "  --seed, -sd <num>             Seed for randomly generated functions\n";
+            std::cerr << "  --samples, -s <num>            Number of samples to generate\n";
+            std::cerr << "  --append, -a                   Append to existing samples\n";
+            std::cerr << "  --spatial-step, -ss <value>    Spatial step size (dx); dt is computed from this\n";
+            std::cerr << "  --num-time-steps, -nts <num>   Number of time steps\n";
+            std::cerr << "  --seed, -sd <num>              Seed for randomly generated functions\n";
             std::exit(1);
         }
     }
@@ -198,10 +201,10 @@ int main(int argc, char* argv[]) {
     int num_samples = DEFAULT_NUM_SAMPLES;
     bool append_mode = false;
     int time_steps = DEFAULT_TIME_STEPS;
-    double time_step_size = DEFAULT_TIME_STEP_SIZE;
+    double spatial_step_size = DEFAULT_SPATIAL_STEP_SIZE;
     unsigned int seed = std::random_device{}();
-    
-    parseCommandLineArguments(argc, argv, num_samples, append_mode, time_steps, time_step_size, seed);
+
+    parseCommandLineArguments(argc, argv, num_samples, append_mode, time_steps, spatial_step_size, seed);
     
     int start_sample_index = 0;
     
@@ -213,8 +216,9 @@ int main(int argc, char* argv[]) {
         std::cout << "Starting from sample 0\n";
     }
     
-    std::cout << "Generating " << num_samples << " samples with " 
-              << time_steps << " time steps of size " << time_step_size << "\n";
+    std::cout << "Generating " << num_samples << " samples with "
+              << time_steps << " time steps and spatial step size " << spatial_step_size
+              << " (dt computed per sample from stability conditions)\n";
 
     auto total_start = std::chrono::high_resolution_clock::now();
 
@@ -226,12 +230,19 @@ int main(int argc, char* argv[]) {
 
         RandomInitialConditionConfig cfg = generateRandomInitialConditionConfig(current_seed);
         RandomInitialCondition f(cfg, false, true, current_seed);
+        
+        // pick a Reynolds number and derive kinematic viscosity from it
+        std::mt19937 reynolds_rng(current_seed);
+        std::uniform_int_distribution<int> reynolds_index_distribution(0, static_cast<int>(REYNOLDS_NUMBERS.size()) - 1);
+        int reynolds_number = REYNOLDS_NUMBERS[reynolds_index_distribution(reynolds_rng)];
+        double kinematic_viscosity = (f.getMaxAbsoluteValue() * cfg.domain_length) / reynolds_number;
 
         SolverConfig solver_cfg;
-        solver_cfg.kinematic_viscosity = KINEMATIC_VISCOSITY;
+        solver_cfg.kinematic_viscosity = kinematic_viscosity;
+        solver_cfg.reynolds_number = reynolds_number;
         solver_cfg.time_steps = time_steps;
         solver_cfg.domain_length = cfg.domain_length;
-        solver_cfg.time_step_size = time_step_size;
+        solver_cfg.spatial_step_size = spatial_step_size;
 
         BurgersSolver1d solver(
             SCHEME_FACTORY(),
