@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "burger_scheme.h"
+#include "math_utils.h"
 #include "metadata_writer.h"
 
 struct SolverConfig {
@@ -60,7 +61,8 @@ private:
     // the time step size computed during solve() from the stability conditions
     double computed_time_step_size;
 
-    double approximate_max_u() const;
+    // max absolute value of the initial condition, computed when IC is set
+    double max_u = 0.0;
 
     // tracks if a NaN was found during the solve
     bool nan_detected;
@@ -89,6 +91,8 @@ public:
     void appendMetadata(nlohmann::json& metadata) const override;
 
     bool wasNanDetected() const;
+
+    double getMaxU() const;
 
     int getNumDomainPoints() const;
 
