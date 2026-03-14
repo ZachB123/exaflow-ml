@@ -19,6 +19,7 @@ SPATIAL_STEP_SIZE_KEY = "spatial_step_size"
 NUM_DOMAIN_POINTS_KEY = "num_domain_points"
 TIME_STEPS_KEY = "time_steps"
 TIME_STEP_SIZE_KEY = "time_step_size"
+KINEMATIC_VISCOSITY = "kinematic_viscosity"
 
 X_COLUMN = "x"
 U_COLUMN = "u"

@@ -23,7 +23,7 @@ class ViscosityDataset(Dataset):
 
 
 class ArtificialViscosityNet(nn.Module):
-    def __init__(self, input_dim=5, hidden_dim=128):
+    def __init__(self, input_dim=6, hidden_dim=128):
         super(ArtificialViscosityNet, self).__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -56,7 +56,7 @@ def train_model(X, y):
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    epochs = 10
+    epochs = 50
     pbar = tqdm(range(epochs))
     for epoch in pbar:
         model.train()
