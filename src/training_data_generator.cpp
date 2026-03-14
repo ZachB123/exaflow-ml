@@ -235,7 +235,7 @@ int main(int argc, char* argv[]) {
         std::mt19937 reynolds_rng(current_seed);
         std::uniform_int_distribution<int> reynolds_index_distribution(0, static_cast<int>(REYNOLDS_NUMBERS.size()) - 1);
         int reynolds_number = REYNOLDS_NUMBERS[reynolds_index_distribution(reynolds_rng)];
-        double kinematic_viscosity = (f.getMaxAbsoluteValue() * cfg.domain_length) / reynolds_number;
+        double kinematic_viscosity = (f.getMaxU() * cfg.domain_length) / reynolds_number;
 
         SolverConfig solver_cfg;
         solver_cfg.kinematic_viscosity = kinematic_viscosity;

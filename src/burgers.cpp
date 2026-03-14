@@ -37,22 +37,15 @@ BurgersSolver1d::BurgersSolver1d(
         solution_history(),
         initial_conditions(initial_conditions),
         nan_detected(false)
-{}
+{
+    max_u = compute_max_abs(initial_conditions, domain_length);
+}
 
 void BurgersSolver1d::setInitialConditions(const std::function<double(double)>& initial_conditions) {
     this->initial_conditions = initial_conditions;
+    max_u = compute_max_abs(initial_conditions, domain_length);
 }
 
-double BurgersSolver1d::approximate_max_u() const {
-    double max_u = 0.0;
-    // num_domain_points is set in solve() before this is called
-    for (int i = 0; i < num_domain_points; ++i) {
-        double x = i * spatial_step_size;
-        max_u = std::max(max_u, std::abs(initial_conditions(x)));
-    }
-
-    return max_u;
-}
 
 void BurgersSolver1d::solve(double cq) {
     if (!initial_conditions) {
@@ -63,8 +56,6 @@ void BurgersSolver1d::solve(double cq) {
     num_domain_points = std::floor(domain_length / spatial_step_size);
     u.assign(num_domain_points, 0.0);
 
-    double max_u = approximate_max_u();
-
     double dt_advection = ALPHA * spatial_step_size / max_u;
     double effective_viscosity = std::max(kinematic_viscosity, 1e-8);
     double dt_diffusion = BETA * (spatial_step_size * spatial_step_size) / effective_viscosity;
@@ -73,8 +64,8 @@ void BurgersSolver1d::solve(double cq) {
     computed_time_step_size = time_step_size;
 
     std::cout << "Computing with " << num_domain_points << " domain points.\n";
-    std::cout << "dt_advection = " << dt_advection << ", dt_diffusion = " << dt_diffusion
-              << " => using dt = " << time_step_size << "\n";
+    std::cout << "max_u = " << max_u << ", dt_advection = " << dt_advection
+              << ", dt_diffusion = " << dt_diffusion << " => using dt = " << time_step_size << "\n";
 
     std::cout << "Setting initial conditions...\n";
     for (int i = 0; i < num_domain_points; ++i) {
@@ -176,6 +167,10 @@ void BurgersSolver1d::appendMetadata(nlohmann::json& metadata) const {
 
 bool BurgersSolver1d::wasNanDetected() const {
     return nan_detected;
+}
+
+double BurgersSolver1d::getMaxU() const {
+    return max_u;
 }
 
 int BurgersSolver1d::getNumDomainPoints() const {
