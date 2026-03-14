@@ -32,6 +32,7 @@ class BurgersSolution:
         self.config = self.metadata[CONFIG_KEY]
         self.solver = self.metadata[SOLVER_KEY]
 
+        
         self.domain_length = (self.solver[NUM_DOMAIN_POINTS_KEY] - 1) * self.solver[SPATIAL_STEP_SIZE_KEY]
 
         self.spatial_step_size = self.solver[SPATIAL_STEP_SIZE_KEY]
@@ -40,6 +41,7 @@ class BurgersSolution:
         self.time_step_size = self.solver[TIME_STEP_SIZE_KEY]
         self.domain_length = self.config[DOMAIN_LENGTH_KEY]
         self.nu = self.solver[KINEMATIC_VISCOSITY]
+        self.max_u = self.metadata[MAX_U]
         self.max_time = (self.time_steps - 1) * self.time_step_size
 
         self._cache = {}

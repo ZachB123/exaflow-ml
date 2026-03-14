@@ -20,6 +20,7 @@ NUM_DOMAIN_POINTS_KEY = "num_domain_points"
 TIME_STEPS_KEY = "time_steps"
 TIME_STEP_SIZE_KEY = "time_step_size"
 KINEMATIC_VISCOSITY = "kinematic_viscosity"
+MAX_U = "max_u"
 
 X_COLUMN = "x"
 U_COLUMN = "u"
@@ -30,6 +31,20 @@ AMPLITUDE_KEY = "amplitude"
 FREQUENCY_KEY = "frequency"
 PHASE_SHIFT_KEY = "phase_shift"
 
+# from solver for dt
+ALPHA = 0.4
+BETA = 0.2
+
 # how much coarser our nn solve will be, for creating dt from the original solve dt
 # TODO make this a range so we don't rely on a single multiplier
-COARSENESS_MULTIPLIER = 1
+COARSENESS_MULTIPLIER = 2
+CQ_DENOMINATOR_EPSILON = 1e-8
+CQ_MAX_MAGNITUDE = 10.0
+# how many extra features to have around the center
+# so like if 3 we will have our center and 3 more in each direction
+U_RADIUS = 3
+
+                    # print(cq)
+
+
+                    # we can't use u_next_i as a feature because we will never have that when running the sim normally
