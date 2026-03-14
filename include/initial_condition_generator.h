@@ -37,7 +37,7 @@ public:
 
     double operator()(double x) const;
 
-    double getMaxAbsoluteValue(int num_sample_points = 10000) const;
+    double getMaxU() const;
 
     void appendMetadata(nlohmann::json& metadata) const override;
 
@@ -49,4 +49,5 @@ private:
     double domain_length;
     std::vector<Term> terms;
     double bias; // used only if alwaysPositive = true
+    double max_u;
 };
