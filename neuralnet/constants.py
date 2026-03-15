@@ -4,6 +4,7 @@ from pathlib import Path
 FILE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = FILE_DIR.parent
 DEFAULT_TRAINING_DATA_DIR = REPO_ROOT / "training_data"
+NEURAL_NET_DIR = REPO_ROOT / "neuralnet"
 
 SOLUTION_DATA_FILENAME = "solution.bin"
 METADATA_FILENAME = "metadata.json"
@@ -25,6 +26,8 @@ MAX_U = "max_u"
 X_COLUMN = "x"
 U_COLUMN = "u"
 
+FEATURE_MATRICES_PATH = NEURAL_NET_DIR / "feature_matrices.npz"
+
 BIAS_KEY = "bias"
 TERMS_KEY = "terms"
 AMPLITUDE_KEY = "amplitude"
@@ -44,7 +47,5 @@ CQ_MAX_MAGNITUDE = 10.0
 # so like if 3 we will have our center and 3 more in each direction
 U_RADIUS = 3
 
-                    # print(cq)
+EPOCHS = 10
 
-
-                    # we can't use u_next_i as a feature because we will never have that when running the sim normally

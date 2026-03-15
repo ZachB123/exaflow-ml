@@ -15,8 +15,8 @@ from constants import *
 def get_device():
     if torch.cuda.is_available():
         device = torch.device("cuda")
-    elif torch.backends.mps.is_available():
-        device = torch.device("mps")
+    # elif torch.backends.mps.is_available():
+    #     device = torch.device("mps")
     else:
         device = torch.device("cpu")
     print(f"Using device: {device}")
@@ -84,18 +84,19 @@ def train_model(X, y):
     train_dataset = ViscosityDataset(X_train_scaled, y_train_scaled)
     test_dataset = ViscosityDataset(X_test_scaled, y_test_scaled)
 
-    train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=1024, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=8192, shuffle=True,
+                              num_workers=4, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=8192, shuffle=False,
+                             num_workers=4, pin_memory=True)
 
     model = ArtificialViscosityNet().to(device)
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10)
 
-    epochs = 5000
     train_losses, test_losses = [], []
-    pbar = tqdm(range(epochs))
-    for epoch in pbar:
+    pbar = tqdm(range(EPOCHS))
+    for epochs in pbar:
         model.train()
         train_loss = 0
         for batch_X, batch_y in train_loader:
@@ -105,7 +106,7 @@ def train_model(X, y):
             loss = criterion(outputs, batch_y)
             loss.backward()
             optimizer.step()
-            train_loss += loss.item()
+            train_loss += loss
 
         model.eval()
         test_loss = 0
@@ -114,15 +115,18 @@ def train_model(X, y):
                 batch_X, batch_y = batch_X.to(device), batch_y.to(device)
                 outputs = model(batch_X)
                 loss = criterion(outputs, batch_y)
-                test_loss += loss.item()
+                test_loss += loss
 
-        avg_train = train_loss / len(train_loader)
-        avg_test = test_loss / len(test_loader)
+        avg_train = (train_loss / len(train_loader)).item()
+        avg_test = (test_loss / len(test_loader)).item()
         train_losses.append(avg_train)
         test_losses.append(avg_test)
         scheduler.step(avg_test)
-        pbar.set_description(f"Epoch {epoch+1}/{epochs} | Train: {avg_train:.6f} | Test: {avg_test:.6f}")
+        pbar.set_description(f"Epoch {epochs+1}/{epochs} | Train: {avg_train:.6f} | Test: {avg_test:.6f}")
 
+    print(train_losses)
+    print()
+    print(test_losses)
     plot_losses(train_losses, test_losses)
 
     return model, X_scaler, y_scaler
