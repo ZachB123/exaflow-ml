@@ -15,9 +15,11 @@ SEARCH_DIRS = ["training_data", "data"]
 # GLOBAL CONTROLS
 # << and >> for playing all cells at the same speed (all cells will sync to the same time)
 # < and > for stepping all cells one timestep based on the largest dt among all samples
+# R for resetting all cells and global time 0
 # LOCAL CONTROLS
 # << and >> for playing the cell at the local speed
 # < and > for stepping the cell one frame (same as one timestep based on its local dt)
+# R for resetting the cell to time 0 (this does not affect global time so using the global controls will snap it back to global time)
 
 def load_frames(data_dir):
     """
@@ -202,7 +204,7 @@ class VisualizerCell:
     
     def _create_controls(self):
         """
-        Create custom controls: < > << >> (play forward/backward) and pause block.
+        Create custom controls: < << >> R > (play forward/backward/reset) and pause block.
         Speed slider below buttons, and y-lock checkbox with global lock checkbox.
         """
         # Create button/slider axes within the control area using relative positioning
@@ -231,23 +233,20 @@ class VisualizerCell:
         button_y = ctrl_bottom + ctrl_height * 0.55
         slider_y = ctrl_bottom + ctrl_height * 0.35
         
-        # Button row (top)
-        ax_prev = fig.add_axes([ctrl_left + ctrl_width * 0.02, button_y, 
-                                button_width_fig, button_height])
-        ax_rewind = fig.add_axes([ctrl_left + ctrl_width * 0.02 + button_width_fig * 1.1, 
-                                  button_y, 
-                                  button_width_fig, button_height])
-        ax_play = fig.add_axes([ctrl_left + ctrl_width * 0.02 + button_width_fig * 2.2, 
-                                button_y, 
-                                button_width_fig, button_height])
-        ax_next = fig.add_axes([ctrl_left + ctrl_width * 0.02 + button_width_fig * 3.3, 
-                                button_y, 
-                                button_width_fig, button_height])
+        # Button row (top): 5 square buttons with consistent spacing
+        button_spacing = button_width_fig * 0.1
+        total_button_width = button_width_fig * 5 + button_spacing * 4
+        buttons_left = ctrl_left + ctrl_width * 0.02
+        
+        ax_prev = fig.add_axes([buttons_left, button_y, button_width_fig, button_height])
+        ax_rewind = fig.add_axes([buttons_left + (button_width_fig + button_spacing), button_y, button_width_fig, button_height])
+        ax_play = fig.add_axes([buttons_left + (button_width_fig + button_spacing) * 2, button_y, button_width_fig, button_height])
+        ax_next = fig.add_axes([buttons_left + (button_width_fig + button_spacing) * 3, button_y, button_width_fig, button_height])
+        ax_reset = fig.add_axes([buttons_left + (button_width_fig + button_spacing) * 4, button_y, button_width_fig, button_height])
         
         # Speed slider (below buttons, same width as button group)
-        slider_width = button_width_fig * 4.4
-        ax_speed = fig.add_axes([ctrl_left + ctrl_width * 0.02, slider_y, 
-                                 slider_width, button_height * 0.6])
+        slider_width = total_button_width
+        ax_speed = fig.add_axes([buttons_left, slider_y, slider_width, button_height * 0.6])
         
         # Lock Y checkbox: anchor to right edge of control area, spaced away from playback buttons
         lock_width = ctrl_width * 0.15  # reasonable size
@@ -260,6 +259,7 @@ class VisualizerCell:
         self.rewind_button = widgets.Button(ax_rewind, "<<")
         self.play_button = widgets.Button(ax_play, ">>")
         self.next_button = widgets.Button(ax_next, ">")
+        self.reset_button = widgets.Button(ax_reset, "R")
         self.speed_slider = widgets.Slider(ax_speed, "", 1.0, 100.0, valinit=self.speed, valstep=0.25)
         # Adjust label position to avoid overlap with slider thumb at max
         self.speed_slider.label.set_x(0.2)
@@ -273,6 +273,7 @@ class VisualizerCell:
         self.rewind_button.label.set_fontsize(fontsize)
         self.play_button.label.set_fontsize(fontsize)
         self.next_button.label.set_fontsize(fontsize)
+        self.reset_button.label.set_fontsize(fontsize)
         self.speed_slider.label.set_fontsize(fontsize)
         
         # Track playback direction: 1 = forward, -1 = backward, 0 = stopped
@@ -283,6 +284,7 @@ class VisualizerCell:
         self.rewind_button.on_clicked(self._play_backward)
         self.play_button.on_clicked(self._play_forward)
         self.next_button.on_clicked(self._next_frame)
+        self.reset_button.on_clicked(self._on_reset)
         self.speed_slider.on_changed(self._change_speed)
         self.lock_cb.on_clicked(self._on_toggle_lock)
     
@@ -401,6 +403,11 @@ class VisualizerCell:
         """Update speed from slider."""
         self.speed = float(val)
     
+    def _on_reset(self, event):
+        """Reset cell to initial state: time 0, stopped playback."""
+        self.desync_from_global()
+        self.reset()
+    
     def _on_toggle_lock(self, label):
         """Toggle y-axis lock."""
         self.y_lock = not self.y_lock
@@ -507,6 +514,15 @@ class VisualizerCell:
             self.main_visualizer.global_playing = False
             self.main_visualizer.global_playback_direction = 0
             self.main_visualizer._update_global_button_states()
+
+    def reset(self):
+        """Reset cell to initial state: time 0, stopped playback."""
+        self.time_pos = 0.0
+        self.frame_idx = 0
+        self.playing = False
+        self.playback_direction = 0
+        self._update_button_states()
+        self._update_plot()
 
     def stop(self):
         """Stop the timer."""
@@ -620,7 +636,7 @@ class MultiGridVisualizer:
         # square buttons, horizontally centered
         button_width = button_height
         button_spacing = button_width * 0.1
-        total_width = button_width * 4 + button_spacing * 3
+        total_width = button_width * 5 + button_spacing * 4
         centre_x = bar_left_fig + bar_width_fig / 2
         buttons_left = centre_x - total_width / 2
 
@@ -628,6 +644,7 @@ class MultiGridVisualizer:
         ax_rewind = fig.add_axes([buttons_left + (button_width + button_spacing), button_bottom, button_width, button_height])
         ax_play   = fig.add_axes([buttons_left + (button_width + button_spacing)*2, button_bottom, button_width, button_height])
         ax_next   = fig.add_axes([buttons_left + (button_width + button_spacing)*3, button_bottom, button_width, button_height])
+        ax_reset  = fig.add_axes([buttons_left + (button_width + button_spacing)*4, button_bottom, button_width, button_height])
 
         ax_speed  = fig.add_axes([buttons_left, slider_bottom, total_width, slider_height])
 
@@ -635,6 +652,7 @@ class MultiGridVisualizer:
         self.global_rewind_button = widgets.Button(ax_rewind, "<<")
         self.global_play_button = widgets.Button(ax_play, ">>")
         self.global_next_button = widgets.Button(ax_next, ">")
+        self.global_reset_button = widgets.Button(ax_reset, "R")
         self.global_speed_slider = widgets.Slider(ax_speed, "", 1.0, 100.0, valinit=self.global_speed, valstep=0.25)
         self.global_speed_slider.label.set_x(0.1)
 
@@ -647,6 +665,7 @@ class MultiGridVisualizer:
         self.global_rewind_button.label.set_fontsize(fontsize)
         self.global_play_button.label.set_fontsize(fontsize)
         self.global_next_button.label.set_fontsize(fontsize)
+        self.global_reset_button.label.set_fontsize(fontsize)
         self.global_speed_slider.label.set_fontsize(fontsize)
 
         # callbacks
@@ -654,6 +673,7 @@ class MultiGridVisualizer:
         self.global_rewind_button.on_clicked(self._global_play_backward)
         self.global_play_button.on_clicked(self._global_play_forward)
         self.global_next_button.on_clicked(self._global_next_frame)
+        self.global_reset_button.on_clicked(self._global_reset)
         self.global_speed_slider.on_changed(self._global_change_speed)
 
         # start global timer
@@ -687,6 +707,18 @@ class MultiGridVisualizer:
         
         for cell in self.cells:
             cell.snap_to_global_time(self.global_time)
+        self._update_global_button_states()
+    
+    def _global_reset(self, event):
+        """Reset global time to 0 and stop all playback."""
+        self.global_time = 0.0
+        self.global_playing = False
+        self.global_playback_direction = 0
+        
+        # Reset all cells
+        for cell in self.cells:
+            cell.reset()
+        
         self._update_global_button_states()
     
     def _global_play_forward(self, event):
