@@ -47,5 +47,5 @@ CQ_MAX_MAGNITUDE = 10.0
 # so like if 3 we will have our center and 3 more in each direction
 U_RADIUS = 3
 
-EPOCHS = 10
+EPOCHS = 1000
 
