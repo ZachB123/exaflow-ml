@@ -163,7 +163,7 @@ class VisualizerCell:
     y_locked_max = None
     all_cells = []  # Registry of all cells for coordinated updates
     
-    def __init__(self, ax_plot, ax_controls, folder_path, initial_speed=1, preloaded_data=None, main_visualizer=None):
+    def __init__(self, ax_plot, ax_controls, folder_path, initial_speed=1, preloaded_data=None, main_visualizer=None, initial_lock_y=True):
         self.ax = ax_plot
         self.ax_controls = ax_controls
         self.folder_path = folder_path
@@ -181,7 +181,7 @@ class VisualizerCell:
         self.frame_idx = 0           # Current discrete frame index (round(time_pos / dt))
         self.playing = False
         self.speed = initial_speed
-        self.y_lock = True
+        self.y_lock = initial_lock_y
         self.y_margin_frac = 0.05
         
         # Global sync state: whether this cell is synchronized to global time
@@ -540,11 +540,12 @@ class MultiGridVisualizer:
     Uses GridSpec to allocate space for plot and controls per cell.
     Includes optional global play controls when multiple samples are present.
     """
-    def __init__(self, rows, cols, folder_paths, initial_speed=1):
+    def __init__(self, rows, cols, folder_paths, initial_speed=1, initial_lock_y=True):
         self.rows = rows
         self.cols = cols
         self.folder_paths = folder_paths
         self.initial_speed = initial_speed
+        self.initial_lock_y = initial_lock_y
         self.cells = []
         
         # Global control state (only used for multiple samples)
@@ -594,7 +595,7 @@ class MultiGridVisualizer:
             ax_controls = self.fig.add_subplot(gs[gs_row + 1, col])
             ax_controls.axis('off')  # Hide the control axis itself
             
-            cell = VisualizerCell(ax_plot, ax_controls, folder_path, initial_speed, preloaded_data, main_visualizer=self)
+            cell = VisualizerCell(ax_plot, ax_controls, folder_path, initial_speed, preloaded_data, main_visualizer=self, initial_lock_y=self.initial_lock_y)
             self.cells.append(cell)
         
         # Hide unused subplots
@@ -887,10 +888,17 @@ Examples:
         help="Number of columns in grid (optional; computed if omitted)",
     )
     parser.add_argument(
-        "--speed",
+        "-s", "--speed",
         type=float,
         default=1,
         help="Initial playback speed (frames per tick, default: 1)",
+    )
+    parser.add_argument(
+        "-y", "--lock-y",
+        type=int,
+        choices=[0, 1],
+        default=1,
+        help="Lock y-axis for all cells (1=locked, 0=unlocked; default=1)",
     )
 
     args = parser.parse_args()
@@ -923,7 +931,7 @@ Examples:
         rows = math.ceil(num / cols)
     
     # Create and display grid visualizer
-    visualizer = MultiGridVisualizer(rows, cols, resolved_folders, args.speed)
+    visualizer = MultiGridVisualizer(rows, cols, resolved_folders, args.speed, bool(args.lock_y))
     visualizer.show()
 
 
