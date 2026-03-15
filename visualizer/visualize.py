@@ -97,11 +97,12 @@ class VisualizerCell:
     y_locked_max = None
     all_cells = []  # Registry of all cells for coordinated updates
     
-    def __init__(self, ax_plot, ax_controls, folder_path, initial_speed=1, preloaded_data=None):
+    def __init__(self, ax_plot, ax_controls, folder_path, initial_speed=1, preloaded_data=None, main_visualizer=None):
         self.ax = ax_plot
         self.ax_controls = ax_controls
         self.folder_path = folder_path
         self.folder_name = os.path.basename(folder_path)
+        self.main_visualizer = main_visualizer  # Reference to MultiGridVisualizer
         
         # Load data (or use preloaded data)
         if preloaded_data is not None:
@@ -436,6 +437,12 @@ class VisualizerCell:
     def desync_from_global(self):
         """Mark this cell as desynced from global time (user interacted with local controls)."""
         self.synced_to_global = False
+        
+        # Stop global playback if it is currently active
+        if self.main_visualizer and self.main_visualizer.global_playing:
+            self.main_visualizer.global_playing = False
+            self.main_visualizer.global_playback_direction = 0
+            self.main_visualizer._update_global_button_states()
 
     def stop(self):
         """Stop the timer."""
@@ -503,7 +510,7 @@ class MultiGridVisualizer:
             ax_controls = self.fig.add_subplot(gs[gs_row + 1, col])
             ax_controls.axis('off')  # Hide the control axis itself
             
-            cell = VisualizerCell(ax_plot, ax_controls, folder_path, initial_speed, preloaded_data)
+            cell = VisualizerCell(ax_plot, ax_controls, folder_path, initial_speed, preloaded_data, main_visualizer=self)
             self.cells.append(cell)
         
         # Hide unused subplots
