@@ -7,3 +7,6 @@ training_data/
 *.dat
 __pycache__/
 .claude/
+*.pkl
+*.npz
+*.pt
