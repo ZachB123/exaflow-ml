@@ -240,9 +240,9 @@ class VisualizerCell:
         
         ax_prev = fig.add_axes([buttons_left, button_y, button_width_fig, button_height])
         ax_rewind = fig.add_axes([buttons_left + (button_width_fig + button_spacing), button_y, button_width_fig, button_height])
-        ax_play = fig.add_axes([buttons_left + (button_width_fig + button_spacing) * 2, button_y, button_width_fig, button_height])
-        ax_next = fig.add_axes([buttons_left + (button_width_fig + button_spacing) * 3, button_y, button_width_fig, button_height])
-        ax_reset = fig.add_axes([buttons_left + (button_width_fig + button_spacing) * 4, button_y, button_width_fig, button_height])
+        ax_reset = fig.add_axes([buttons_left + (button_width_fig + button_spacing) * 2, button_y, button_width_fig, button_height])
+        ax_play = fig.add_axes([buttons_left + (button_width_fig + button_spacing) * 3, button_y, button_width_fig, button_height])
+        ax_next = fig.add_axes([buttons_left + (button_width_fig + button_spacing) * 4, button_y, button_width_fig, button_height])
         
         # Speed slider (below buttons, same width as button group)
         slider_width = total_button_width
@@ -257,9 +257,9 @@ class VisualizerCell:
         
         self.prev_button = widgets.Button(ax_prev, "<")
         self.rewind_button = widgets.Button(ax_rewind, "<<")
+        self.reset_button = widgets.Button(ax_reset, "R")
         self.play_button = widgets.Button(ax_play, ">>")
         self.next_button = widgets.Button(ax_next, ">")
-        self.reset_button = widgets.Button(ax_reset, "R")
         self.speed_slider = widgets.Slider(ax_speed, "", 1.0, 100.0, valinit=self.speed, valstep=0.25)
         # Adjust label position to avoid overlap with slider thumb at max
         self.speed_slider.label.set_x(0.2)
@@ -406,7 +406,7 @@ class VisualizerCell:
     def _on_reset(self, event):
         """Reset cell to initial state: time 0, stopped playback."""
         self.desync_from_global()
-        self.reset()
+        self.reset(start=True)
     
     def _on_toggle_lock(self, label):
         """Toggle y-axis lock."""
@@ -515,9 +515,13 @@ class VisualizerCell:
             self.main_visualizer.global_playback_direction = 0
             self.main_visualizer._update_global_button_states()
 
-    def reset(self):
-        """Reset cell to initial state: time 0, stopped playback."""
-        self.time_pos = 0.0
+    def reset(self, start=True):
+        """Reset cell to initial state: time 0 (if start=True) or max time (if start=False), stopped playback."""
+        if start:
+            self.time_pos = 0.0
+        else:
+            # Reset to end: max_time = (num_frames - 1) * dt
+            self.time_pos = (len(self.frames) - 1) * self.dt
         self.frame_idx = 0
         self.playing = False
         self.playback_direction = 0
@@ -642,17 +646,17 @@ class MultiGridVisualizer:
 
         ax_prev   = fig.add_axes([buttons_left,                                  button_bottom, button_width, button_height])
         ax_rewind = fig.add_axes([buttons_left + (button_width + button_spacing), button_bottom, button_width, button_height])
-        ax_play   = fig.add_axes([buttons_left + (button_width + button_spacing)*2, button_bottom, button_width, button_height])
-        ax_next   = fig.add_axes([buttons_left + (button_width + button_spacing)*3, button_bottom, button_width, button_height])
-        ax_reset  = fig.add_axes([buttons_left + (button_width + button_spacing)*4, button_bottom, button_width, button_height])
+        ax_reset  = fig.add_axes([buttons_left + (button_width + button_spacing)*2, button_bottom, button_width, button_height])
+        ax_play   = fig.add_axes([buttons_left + (button_width + button_spacing)*3, button_bottom, button_width, button_height])
+        ax_next   = fig.add_axes([buttons_left + (button_width + button_spacing)*4, button_bottom, button_width, button_height])
 
         ax_speed  = fig.add_axes([buttons_left, slider_bottom, total_width, slider_height])
 
         self.global_prev_button = widgets.Button(ax_prev, "<")
         self.global_rewind_button = widgets.Button(ax_rewind, "<<")
+        self.global_reset_button = widgets.Button(ax_reset, "R")
         self.global_play_button = widgets.Button(ax_play, ">>")
         self.global_next_button = widgets.Button(ax_next, ">")
-        self.global_reset_button = widgets.Button(ax_reset, "R")
         self.global_speed_slider = widgets.Slider(ax_speed, "", 1.0, 100.0, valinit=self.global_speed, valstep=0.25)
         self.global_speed_slider.label.set_x(0.1)
 
@@ -709,15 +713,20 @@ class MultiGridVisualizer:
             cell.snap_to_global_time(self.global_time)
         self._update_global_button_states()
     
-    def _global_reset(self, event):
-        """Reset global time to 0 and stop all playback."""
-        self.global_time = 0.0
+    def _global_reset(self, event, start=True):
+        """Reset global time to 0 (if start=True) or max time (if start=False) and stop all playback."""
+        if start:
+            self.global_time = 0.0
+        else:
+            # Reset to end: calculate max_time across all cells
+            self.global_time = max((len(cell.frames) - 1) * cell.dt for cell in self.cells)
+        
         self.global_playing = False
         self.global_playback_direction = 0
         
         # Reset all cells
         for cell in self.cells:
-            cell.reset()
+            cell.reset(start=start)
         
         self._update_global_button_states()
     
