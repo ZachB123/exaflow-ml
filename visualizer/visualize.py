@@ -10,6 +10,8 @@ import json
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
+SEARCH_DIRS = ["training_data", "data"]
+
 # GLOBAL CONTROLS
 # << and >> for playing all cells at the same speed (all cells will sync to the same time)
 # < and > for stepping all cells one timestep based on the largest dt among all samples
@@ -84,6 +86,68 @@ def load_frames(data_dir):
     
     else:
         raise ValueError(f"No solution data found in {data_dir}. Expected either solution.bin+metadata.json or timestep_*.csv files.")
+
+def resolve_folder(folder_name):
+    """
+    Resolves a folder path for a given sample name, integer, or relative path.
+    Supports:
+    - Integer (e.g., 5 → sample_000005 in training_data)
+    - Folder name (e.g., sample_000000 → searches SEARCH_DIRS)
+    - Relative path (e.g., training_data/sample_000000)
+    
+    Returns the resolved folder path or raises FileNotFoundError/ValueError.
+    """
+    # If folder_name is an integer string, treat as sample_XXXXXX in training_data
+    if folder_name.isdigit():
+        sample_name = f"sample_{int(folder_name):06d}"
+        candidate = os.path.join(PROJECT_ROOT, "training_data", sample_name)
+        if os.path.isdir(candidate):
+            return candidate
+        raise FileNotFoundError(f"Could not find folder 'sample_{int(folder_name):06d}' in training_data.")
+    
+    # If folder_name contains path separators, try a few things (I extended this because I was having some issues when I was in certain CWDs)
+    # Try in order: absolute path, path relative to current working directory, path relative to PROJECT_ROOT
+    if os.path.sep in folder_name:
+        # Absolute path
+        if os.path.isabs(folder_name):
+            if os.path.isdir(folder_name):
+                return folder_name
+            raise FileNotFoundError(f"Folder not found: {folder_name}")
+
+        # Path relative to current working directory
+        cwd_candidate = os.path.abspath(folder_name)
+        if os.path.isdir(cwd_candidate):
+            return cwd_candidate
+
+        # Also try relative to the script directory (useful when user runs from inside visualizer/)
+        script_candidate = os.path.normpath(os.path.join(SCRIPT_DIR, folder_name))
+        if os.path.isdir(script_candidate):
+            return script_candidate
+
+        # Path relative to project root (original behavior)
+        candidate = os.path.join(PROJECT_ROOT, folder_name)
+        if os.path.isdir(candidate):
+            return candidate
+
+        raise FileNotFoundError(f"Folder not found: {folder_name}")
+    
+    # Otherwise search in SEARCH_DIRS
+    candidates = []
+    for search_dir in SEARCH_DIRS:
+        candidate = os.path.join(PROJECT_ROOT, search_dir, folder_name)
+        if os.path.isdir(candidate):
+            candidates.append(candidate)
+    
+    if len(candidates) == 1:
+        return candidates[0]
+    elif len(candidates) > 1:
+        print(f"Error: Multiple folders found for '{folder_name}':")
+        for idx, c in enumerate(candidates):
+            print(f"  [{idx+1}] {c}")
+        print("Please specify the full path to the folder you want to visualize.")
+        return None
+    else:
+        raise FileNotFoundError(f"Could not find folder '{folder_name}' in any of: {', '.join(SEARCH_DIRS)}.")
 
 
 class VisualizerCell:
@@ -751,14 +815,17 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Single visualizer (1x1 grid, default)
-  python visualize.py /path/to/sample_000000 --speed 1
+  # Single visualizer from integer ID
+  python visualize.py 0 --speed 1
   
-  # 2x2 grid with 4 samples
-  python visualize.py -r 2 -c 2 /path/to/sample_000000 /path/to/sample_000001 /path/to/sample_000002 /path/to/sample_000003
+  # Single visualizer from folder name
+  python visualize.py sample_000000 --speed 1
   
-  # 1x2 grid with 2 samples
-  python visualize.py --rows 1 --cols 2 /path/to/sample_000000 /path/to/sample_000001
+  # 2x2 grid with 4 samples using integer IDs
+  python visualize.py -r 2 -c 2 0 1 2 3
+  
+  # 1x2 grid with 2 samples using full paths
+  python visualize.py --rows 1 --cols 2 ../training_data/sample_000000 ../training_data/sample_000001
         """
     )
     
@@ -766,7 +833,7 @@ Examples:
         "folders",
         type=str,
         nargs="+",
-        help="Folder paths containing timestep_*.csv files",
+        help="Sample specifications: integer ID (e.g., 5→sample_000005), folder name (e.g., sample_000000), or path (e.g., training_data/sample_000000)",
     )
     parser.add_argument(
         "-r", "--rows",
@@ -787,19 +854,35 @@ Examples:
 
     args = parser.parse_args()
     
+    # Resolve all folder specifications to actual paths
+    resolved_folders = []
+    for folder_spec in args.folders:
+        try:
+            resolved = resolve_folder(folder_spec)
+            if resolved is not None:
+                resolved_folders.append(resolved)
+            else:
+                print(f"Skipping ambiguous folder: {folder_spec}")
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+            return
+    
+    if not resolved_folders:
+        print("Error: No valid folders resolved.")
+        return
+    
     # derive rows/cols if not provided
-    num = len(args.folders)
+    num = len(resolved_folders)
     rows = args.rows
     cols = args.cols
     if rows is None or cols is None:
         # choose grid as square as possible, bias wider: cols >= rows
-        # start with ceil(sqrt(num)) for cols
         import math
         cols = math.ceil(math.sqrt(num))
         rows = math.ceil(num / cols)
     
     # Create and display grid visualizer
-    visualizer = MultiGridVisualizer(rows, cols, args.folders, args.speed)
+    visualizer = MultiGridVisualizer(rows, cols, resolved_folders, args.speed)
     visualizer.show()
 
 
