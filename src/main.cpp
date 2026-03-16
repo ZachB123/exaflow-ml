@@ -75,40 +75,40 @@ int main() {
   // the mid-y cross-section slice directly against the 1D solution.
 
   // Matches 2D square-wave: u=1 on [0.3, 0.7], domain [0, 1], inviscid
-  SolverConfig match_squarewave_config = {.kinematic_viscosity = 0.0,
-                                          .time_steps = 400,
-                                          .domain_length = 1.0,
-                                          .time_step_size = 0.001};
+  // SolverConfig match_squarewave_config = {.kinematic_viscosity = 0.0,
+  //                                         .time_steps = 400,
+  //                                         .domain_length = 1.0,
+  //                                         .time_step_size = 0.001};
 
-  std::function<double(double)> match_squarewave = [](double x) -> double {
-    return (x >= 0.3 && x <= 0.7) ? 1.0 : 0.0;
-  };
+  // std::function<double(double)> match_squarewave = [](double x) -> double {
+  //   return (x >= 0.3 && x <= 0.7) ? 1.0 : 0.0;
+  // };
 
-  BurgersSolver1d sq_solver(std::make_unique<Godunov>(),
-                            match_squarewave_config, match_squarewave);
+  // BurgersSolver1d sq_solver(std::make_unique<Godunov>(),
+  //                           match_squarewave_config, match_squarewave);
 
-  sq_solver.solve();
-  // gap=10 -> saves every 10th step -> 41 files, matching the 2D snapshot count
-  sq_solver.saveSolution("../data", "match_squarewave_Godunov", 10);
-  std::cout << "match_squarewave NaN detected: " << sq_solver.wasNanDetected()
-            << std::endl;
+  // sq_solver.solve();
+  // // gap=10 -> saves every 10th step -> 41 files, matching the 2D snapshot count
+  // sq_solver.saveSolution("../data", "match_squarewave_Godunov", 10);
+  // std::cout << "match_squarewave NaN detected: " << sq_solver.wasNanDetected()
+  //           << std::endl;
 
-  // Matches 2D Gaussian: exp(-(x-0.5)^2 / 0.02), sigma=0.1, domain [0, 1],
-  // inviscid
-  SolverConfig match_gaussian_config = {.kinematic_viscosity = 0.0,
-                                        .time_steps = 400,
-                                        .domain_length = 1.0,
-                                        .time_step_size = 0.001};
+  // // Matches 2D Gaussian: exp(-(x-0.5)^2 / 0.02), sigma=0.1, domain [0, 1],
+  // // inviscid
+  // SolverConfig match_gaussian_config = {.kinematic_viscosity = 0.0,
+  //                                       .time_steps = 400,
+  //                                       .domain_length = 1.0,
+  //                                       .time_step_size = 0.001};
 
-  std::function<double(double)> match_gaussian = [](double x) -> double {
-    return std::exp(-((x - 0.5) * (x - 0.5)) / 0.02);
-  };
+  // std::function<double(double)> match_gaussian = [](double x) -> double {
+  //   return std::exp(-((x - 0.5) * (x - 0.5)) / 0.02);
+  // };
 
-  BurgersSolver1d gauss_solver(std::make_unique<Godunov>(),
-                               match_gaussian_config, match_gaussian);
+  // BurgersSolver1d gauss_solver(std::make_unique<Godunov>(),
+  //                              match_gaussian_config, match_gaussian);
 
-  gauss_solver.solve();
-  gauss_solver.saveSolution("../data", "match_gaussian_Godunov", 10);
-  std::cout << "match_gaussian NaN detected: " << gauss_solver.wasNanDetected()
-            << std::endl;
+  // gauss_solver.solve();
+  // gauss_solver.saveSolution("../data", "match_gaussian_Godunov", 10);
+  // std::cout << "match_gaussian NaN detected: " << gauss_solver.wasNanDetected()
+  //           << std::endl;
 }
