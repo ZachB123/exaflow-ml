@@ -27,6 +27,13 @@ set(SHARED_SOURCES
     src/schemes/godunov.cpp
 )
 
+set(SHARED_SOURCES_2D
+    src/burgers_2d.cpp
+    src/schemes/ftcs_2d.cpp
+    src/schemes/lax_wendroff_2d.cpp
+    src/schemes/godunov_2d.cpp
+)
+
 # regular experimental solver
 add_executable(burgers
     src/main.cpp
@@ -39,8 +46,8 @@ add_executable(training_data_generator
     ${SHARED_SOURCES}
 )
 
-# 2D Godunov solver for the 2D Burgers system
-add_executable(burgers_godunov2d
-    src/main_godunov2d.cpp
-    src/burgers_godunov2d.cpp
+# 2D burgers' solver
+add_executable(burgers_2d
+    src/main_2d.cpp
+    ${SHARED_SOURCES_2D}
 )

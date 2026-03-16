@@ -2,6 +2,7 @@
 #include <fstream>
 #include <functional>
 #include <vector>
+#include <iostream>
 
 #include "burger_scheme.h"
 #include "burgers.h"
