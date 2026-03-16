@@ -1,17 +1,7 @@
 #include "burger_scheme_2d.h"
 #include <cmath>
 
-void LaxWendroff2D::calculateNextU(
-    const std::vector<std::vector<double>>& u,
-    std::vector<std::vector<double>>& u_next,
-    double cq,
-    int num_domain_points_x,
-    int num_domain_points_y,
-    double time_step_size,
-    double spatial_step_size_x,
-    double spatial_step_size_y,
-    double kinematic_viscosity
-) {
+void LaxWendroff2D::calculateNextU(const std::vector<std::vector<double>>& u, std::vector<std::vector<double>>& u_next, double cq, int num_domain_points_x, int num_domain_points_y, double time_step_size, double spatial_step_size_x, double spatial_step_size_y, double kinematic_viscosity) {
     double dt = time_step_size;
     double dx = spatial_step_size_x;
     double dy = spatial_step_size_y;
@@ -164,24 +154,9 @@ void LaxWendroff2D::calculateNextU(
     u_next[num_domain_points_x - 1][num_domain_points_y - 1] = u_next[0][0];
 }
 
-double LaxWendroff2D::calculateArtificialViscosity(
-    const std::vector<std::vector<double>>& u,
-    double cq,
-    double spatial_step_size_x,
-    double spatial_step_size_y,
-    int i,
-    int j,
-    int num_domain_points_x,
-    int num_domain_points_y
-) const {
-    double ux = (i == 0)
-        ? (u[i + 1][j] - u[num_domain_points_x - 2][j]) / (2.0 * spatial_step_size_x)
-        : (u[i + 1][j] - u[i - 1][j]) / (2.0 * spatial_step_size_x);
-
-    double uy = (j == 0)
-        ? (u[i][j + 1] - u[i][num_domain_points_y - 2]) / (2.0 * spatial_step_size_y)
-        : (u[i][j + 1] - u[i][j - 1]) / (2.0 * spatial_step_size_y);
-
+double LaxWendroff2D::calculateArtificialViscosity(const std::vector<std::vector<double>>& u, double cq, double spatial_step_size_x, double spatial_step_size_y, int i, int j, int num_domain_points_x, int num_domain_points_y) const {
+    double ux = (i == 0) ? (u[i + 1][j] - u[num_domain_points_x - 2][j]) / (2.0 * spatial_step_size_x) : (u[i + 1][j] - u[i - 1][j]) / (2.0 * spatial_step_size_x);
+    double uy = (j == 0) ? (u[i][j + 1] - u[i][num_domain_points_y - 2]) / (2.0 * spatial_step_size_y) : (u[i][j + 1] - u[i][j - 1]) / (2.0 * spatial_step_size_y);
     // Only take artificial viscosity when in compression
     double artvis = (ux + uy < 0) ? cq * 0.5 * (spatial_step_size_x * spatial_step_size_x + spatial_step_size_y * spatial_step_size_y) * std::abs(ux + uy) : 0.0;
 
