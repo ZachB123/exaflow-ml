@@ -9,7 +9,7 @@
 
 int main() {
     SolverConfig2D step_function_config = {.kinematic_viscosity = 0.01,
-                                           .time_step_size = 2000,
+                                           .time_steps = 2000,
                                            .domain_length_x = 2.0,
                                            .domain_length_y = 2.0,
                                            .time_step_size = 0.001};

@@ -20,7 +20,7 @@ class BurgersSolver2d {
         inline static const double ALPHA = 0.9;
 
         // scheme for solving
-        std::unique_ptr<BurgerScheme2D> scheme_2d;
+        std::unique_ptr<BurgerScheme2D> scheme;
 
         const double kinematic_viscosity;
         const int time_steps;
@@ -44,7 +44,7 @@ class BurgersSolver2d {
 
         // how many points we calculate the value for in our domain
         int most_recent_num_domain_points_x;
-        int most_recent_spatial_step_size_y;
+        int most_recent_num_domain_points_y;
 
         // how big of jumps we take in the domain duch that we have num_domain_points points
         double most_recent_spatial_step_size_x;
