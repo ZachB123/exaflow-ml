@@ -19,9 +19,6 @@ def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):
     if not requires_artificial_viscosity(dx, u_i_minus_1, u_i_plus_1):
         return None
 
-    # if (u_i_plus_1 - 2*u_i + u_i_minus_1) == 0:
-    #     return None
-
     numerator = (
         u_next_i - u_i
         + u_i * (dt / (2 * dx)) * (u_i_plus_1 - u_i_minus_1)
@@ -64,7 +61,7 @@ def get_feature_matrices_for_sample(sample_name):
     coarse_num_domain_points = int(burgers_solution.domain_length // coarse_dx)
 
     # Collect data from multiple timesteps
-    for time_step in range(min(coarse_num_timesteps, 50)):
+    for time_step in range(min(coarse_num_timesteps - 1, 500)): # temp 500 so we don't run out of space
         for spatial_step in range(U_RADIUS, coarse_num_domain_points - U_RADIUS):
             curr_time = time_step * coarse_dt
             next_time = (time_step + 1) * coarse_dt

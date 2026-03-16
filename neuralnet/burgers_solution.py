@@ -1,7 +1,6 @@
 import json
 import os
 import numpy as np
-import pandas as pd
 from constants import *
 
 
@@ -32,17 +31,15 @@ class BurgersSolution:
         self.config = self.metadata[CONFIG_KEY]
         self.solver = self.metadata[SOLVER_KEY]
 
-        
-        self.domain_length = (self.solver[NUM_DOMAIN_POINTS_KEY] - 1) * self.solver[SPATIAL_STEP_SIZE_KEY]
 
-        self.spatial_step_size = self.solver[SPATIAL_STEP_SIZE_KEY]
-        self.num_domain_points = self.solver[NUM_DOMAIN_POINTS_KEY]
-        self.time_steps = self.solver[TIME_STEPS_KEY]
-        self.time_step_size = self.solver[TIME_STEP_SIZE_KEY]
-        self.domain_length = self.config[DOMAIN_LENGTH_KEY]
-        self.nu = self.solver[KINEMATIC_VISCOSITY]
-        self.max_u = self.metadata[MAX_U]
-        self.max_time = (self.time_steps - 1) * self.time_step_size
+        self.spatial_step_size = float(self.solver[SPATIAL_STEP_SIZE_KEY])
+        self.num_domain_points = int(self.solver[NUM_DOMAIN_POINTS_KEY])
+        self.time_steps = int(self.solver[TIME_STEPS_KEY])
+        self.time_step_size = float(self.solver[TIME_STEP_SIZE_KEY])
+        self.domain_length = float(self.config[DOMAIN_LENGTH_KEY])
+        self.nu = float(self.solver[KINEMATIC_VISCOSITY])
+        self.max_u = float(self.metadata[MAX_U])
+        self.max_time = float((self.time_steps - 1) * self.time_step_size)
 
         self._cache = {}
 
@@ -72,14 +69,6 @@ class BurgersSolution:
                 [t[PHASE_SHIFT_KEY] for t in terms], dtype=float
             ),
         }
-
-        self.time_steps = int(self.metadata[SOLVER_KEY][TIME_STEPS_KEY])
-        self.time_step_size = float(self.metadata[SOLVER_KEY][TIME_STEP_SIZE_KEY])
-        self.max_time = (self.time_steps - 1) * self.time_step_size
-
-        self.spatial_step_size = float(self.metadata[SOLVER_KEY][SPATIAL_STEP_SIZE_KEY])
-        self.num_domain_points = int(self.metadata[SOLVER_KEY][NUM_DOMAIN_POINTS_KEY])
-        self.domain_length = float(self.num_domain_points - 1) * self.spatial_step_size
 
         # Memory mapped solution array — OS page cache handles caching automatically
         self._u = np.memmap(

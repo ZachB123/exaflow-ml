@@ -23,9 +23,6 @@ TIME_STEP_SIZE_KEY = "time_step_size"
 KINEMATIC_VISCOSITY = "kinematic_viscosity"
 MAX_U = "max_u"
 
-X_COLUMN = "x"
-U_COLUMN = "u"
-
 FEATURE_MATRICES_PATH = NEURAL_NET_DIR / "feature_matrices.npz"
 
 BIAS_KEY = "bias"
@@ -47,5 +44,6 @@ CQ_MAX_MAGNITUDE = 10.0
 # so like if 3 we will have our center and 3 more in each direction
 U_RADIUS = 3
 
-EPOCHS = 1000
-
+EPOCHS = 10
+CPU_BATCH_SIZE = 2048
+GPU_BATCH_SIZE = 65536
