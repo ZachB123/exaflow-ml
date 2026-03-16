@@ -39,8 +39,9 @@ class BurgersSolver2d {
         };
         std::vector<Snapshot> solution_history;
 
-        // the function that we are using to define our initial conditions
-        std::function<double(double, double)> initial_conditions;
+        // the functions that we are using to define our initial conditions
+        std::function<double(double, double)> initial_conditions_u;
+        std::function<double(double, double)> initial_conditions_v;
 
         // how many points we calculate the value for in our domain
         int most_recent_num_domain_points_x;
@@ -51,6 +52,7 @@ class BurgersSolver2d {
         double most_recent_spatial_step_size_y;
 
         double approximate_max_u() const;
+        double approximate_max_v() const;
 
         // tracks if a NaN was found during the solve
         bool nan_detected;
@@ -63,9 +65,11 @@ class BurgersSolver2d {
         BurgersSolver2d(
             const std::unique_ptr<BurgerScheme2D> scheme, 
             const SolverConfig2D& config, 
-            const std::function<double(double, double)>& initialize_conditions);
+            const std::function<double(double, double)> initial_conditions_u,
+            const std::function<double(double, double)> initial_conditions_v);
 
-        void setInitialConditions(const std::function<double(double, double)>& initialize_conditions);
+        void setInitialConditions(const std::function<double(double, double)> &u_initial,
+                                  const std::function<double(double, double)> &v_initial);
 
         void solve(double cq = 2.0);
 

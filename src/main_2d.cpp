@@ -16,11 +16,11 @@ int main() {
 
     // 1 everywhere in domain
     // for 0.5 <= x,y <= 1 the function value is 2
-    std::function<double(double, double)> step_function = [](double x, double y) -> double {
+    std::function<double(double, double)> square_wave = [](double x, double y) -> double {
         return (x >= 0.5 && x <= 1.0 && y >= 0.5 && y <= 1.0) ? 2.0 : 1.0;
     };
 
-    BurgersSolver2d step_function_solver(std::make_unique<Godunov2D>(), step_function_config, step_function);
+    BurgersSolver2d step_function_solver(std::make_unique<Godunov2D>(), step_function_config, square_wave, square_wave);
 
     step_function_solver.solve();
     step_function_solver.saveSolution("../data_2d", "step_function", 1);
