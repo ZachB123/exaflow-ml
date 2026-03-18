@@ -44,6 +44,9 @@ CQ_MAX_MAGNITUDE = 10.0
 # so like if 3 we will have our center and 3 more in each direction
 U_RADIUS = 3
 
+MAX_TIMESTEPS_PER_SOLUTION = 500
+MAX_SPATIAL_POINTS_PER_TIMESTEP = 500
+
 EPOCHS = 10
 CPU_BATCH_SIZE = 2048
 GPU_BATCH_SIZE = 65536

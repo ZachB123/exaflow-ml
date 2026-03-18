@@ -60,9 +60,14 @@ def get_feature_matrices_for_sample(sample_name):
     coarse_num_timesteps = int(burgers_solution.max_time // coarse_dt)
     coarse_num_domain_points = int(burgers_solution.domain_length // coarse_dx)
 
-    # Collect data from multiple timesteps
-    for time_step in range(min(coarse_num_timesteps - 1, 500)): # temp 500 so we don't run out of space
-        for spatial_step in range(U_RADIUS, coarse_num_domain_points - U_RADIUS):
+    # Randomly sample timesteps, then from each timestep randomly sample spatial points
+    all_timesteps = np.arange(coarse_num_timesteps - 1)
+    sampled_timesteps = np.random.choice(all_timesteps, size=min(MAX_TIMESTEPS_PER_SOLUTION, len(all_timesteps)), replace=False)
+    all_spatial_steps = np.arange(U_RADIUS, coarse_num_domain_points - U_RADIUS)
+
+    for time_step in sampled_timesteps:
+        sampled_spatial_steps = np.random.choice(all_spatial_steps, size=min(MAX_SPATIAL_POINTS_PER_TIMESTEP, len(all_spatial_steps)), replace=False)
+        for spatial_step in sampled_spatial_steps:
             curr_time = time_step * coarse_dt
             next_time = (time_step + 1) * coarse_dt
             curr_x = spatial_step * coarse_dx
