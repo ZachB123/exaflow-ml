@@ -46,6 +46,9 @@ def get_feature_matrices_for_sample(sample_name):
     X_rows = []
     y_rows = []
 
+    # Seed for reproducibility, based on sample index so solutions are not sampled identically
+    rng = np.random.default_rng(int(sample_name.split("_")[-1]))
+
     burgers_solution = BurgersSolution(sample_name)
     nu = burgers_solution.nu
     fine_dt = burgers_solution.time_step_size
@@ -62,11 +65,11 @@ def get_feature_matrices_for_sample(sample_name):
 
     # Randomly sample timesteps, then from each timestep randomly sample spatial points
     all_timesteps = np.arange(coarse_num_timesteps - 1)
-    sampled_timesteps = np.random.choice(all_timesteps, size=min(MAX_TIMESTEPS_PER_SOLUTION, len(all_timesteps)), replace=False)
+    sampled_timesteps = rng.choice(all_timesteps, size=min(MAX_TIMESTEPS_PER_SOLUTION, len(all_timesteps)), replace=False)
     all_spatial_steps = np.arange(U_RADIUS, coarse_num_domain_points - U_RADIUS)
 
     for time_step in sampled_timesteps:
-        sampled_spatial_steps = np.random.choice(all_spatial_steps, size=min(MAX_SPATIAL_POINTS_PER_TIMESTEP, len(all_spatial_steps)), replace=False)
+        sampled_spatial_steps = rng.choice(all_spatial_steps, size=min(MAX_SPATIAL_POINTS_PER_TIMESTEP, len(all_spatial_steps)), replace=False)
         for spatial_step in sampled_spatial_steps:
             curr_time = time_step * coarse_dt
             next_time = (time_step + 1) * coarse_dt
