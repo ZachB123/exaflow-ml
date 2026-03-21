@@ -2,7 +2,6 @@ import numpy as np
 from pathlib import Path
 
 SEED = 42
-RNG = np.random.default_rng(SEED)
 
 # make path relative to constants.py
 FILE_DIR = Path(__file__).resolve().parent

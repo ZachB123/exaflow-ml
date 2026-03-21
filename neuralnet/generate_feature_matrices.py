@@ -42,7 +42,7 @@ def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):
     return cq
 
 
-def get_feature_matrices_for_sample(sample_name):
+def get_feature_matrices_for_sample(sample_name, seed):
     X_rows = []
     y_rows = []
 
@@ -61,12 +61,13 @@ def get_feature_matrices_for_sample(sample_name):
     coarse_num_domain_points = int(burgers_solution.domain_length // coarse_dx)
 
     # Randomly sample timesteps, then from each timestep randomly sample spatial points
+    rng = np.random.default_rng(seed)
     all_timesteps = np.arange(coarse_num_timesteps - 1)
-    sampled_timesteps = RNG.choice(all_timesteps, size=min(MAX_TIMESTEPS_PER_SOLUTION, len(all_timesteps)), replace=False)
+    sampled_timesteps = rng.choice(all_timesteps, size=min(MAX_TIMESTEPS_PER_SOLUTION, len(all_timesteps)), replace=False)
     all_spatial_steps = np.arange(U_RADIUS, coarse_num_domain_points - U_RADIUS)
 
     for time_step in sampled_timesteps:
-        sampled_spatial_steps = RNG.choice(all_spatial_steps, size=min(MAX_SPATIAL_POINTS_PER_TIMESTEP, len(all_spatial_steps)), replace=False)
+        sampled_spatial_steps = rng.choice(all_spatial_steps, size=min(MAX_SPATIAL_POINTS_PER_TIMESTEP, len(all_spatial_steps)), replace=False)
         for spatial_step in sampled_spatial_steps:
             curr_time = time_step * coarse_dt
             next_time = (time_step + 1) * coarse_dt
@@ -98,8 +99,9 @@ if __name__ == "__main__":
     samples = get_training_data_folder_names()
 
     print(f"Found {len(samples)} samples. Extracting features...")
+    seeds = [SEED + i for i in range(len(samples))]
     with Pool(processes=cpu_count()) as pool:
-        results = pool.map(get_feature_matrices_for_sample, samples)
+        results = pool.starmap(get_feature_matrices_for_sample, zip(samples, seeds))
 
     X_matrices, y_matrices = zip(*results)
 
