@@ -11,3 +11,4 @@ __pycache__/
 *.npz
 *.pt
 *.png
+CLAUDE.md

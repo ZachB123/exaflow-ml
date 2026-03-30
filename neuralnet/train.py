@@ -3,6 +3,7 @@ import joblib
 import torch
 from torch import optim
 from tqdm import tqdm
+from sklearn.metrics import r2_score
 
 from constants import *
 from nn import *
@@ -59,6 +60,16 @@ def cpu_train(X, y):
         test_losses.append(avg_test)
         scheduler.step(avg_test)
         pbar.set_description(f"Epoch {epoch+1}/{EPOCHS} | Train: {avg_train:.6f} | Test: {avg_test:.6f}")
+
+    model.eval()
+    all_predictions = []
+    with torch.no_grad():
+        for batch_X, _ in test_loader:
+            all_predictions.append(model(batch_X).numpy().ravel())
+    y_predicted = np.concatenate(all_predictions)
+    y_true = y_test_scaled
+
+    print(f"\nTest R² = {r2_score(y_true, y_predicted):.6f}")
 
     print(train_losses)
     print()
@@ -127,6 +138,13 @@ def gpu_train(X, y):
         scheduler.step(avg_test)
         pbar.set_description(f"Epoch {epoch+1}/{EPOCHS} | Train: {avg_train:.6f} | Test: {avg_test:.6f}")
 
+    model.eval()
+    with torch.no_grad():
+        y_predicted = model(X_test_t).cpu().numpy().ravel()
+    y_true = y_test_scaled
+
+    print(f"\nTest R² = {r2_score(y_true, y_predicted):.6f}")
+
     print(train_losses)
     print()
     print(test_losses)
@@ -141,8 +159,8 @@ if __name__ == "__main__":
     X, y = data["X"], data["y"]
     print(f"X shape: {X.shape} | y shape: {y.shape}")
 
-    train_fn = gpu_train if torch.cuda.is_available() else cpu_train
-    model, X_scaler, y_scaler = train_fn(X, y)
+    train_function = gpu_train if torch.cuda.is_available() else cpu_train
+    model, X_scaler, y_scaler = train_function(X, y)
 
     torch.save(model.state_dict(), NEURAL_NET_DIR / "model.pt")
     joblib.dump(X_scaler, NEURAL_NET_DIR / "X_scaler.pkl")
