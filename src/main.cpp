@@ -51,8 +51,8 @@ int main() {
         std::cout << "Solving N-wave for v=" << v << "...\n";
         BurgersSolver1d n_wave_solver(std::make_unique<Godunov>(), wiki_config_base, n_wave_function);
 
-        std::cout << "nwave function was nan detected: " << n_wave_solver.wasNanDetected() << std::endl;
         n_wave_solver.solve();
+        std::cout << "nwave function was nan detected: " << n_wave_solver.wasNanDetected() << std::endl;
         n_wave_solver.saveBinarySolution("../data", "wiki_n_wave_" + v_str);
         MetadataWriter(n_wave_solver).write("../data/wiki_n_wave_" + v_str + "/metadata.json");
     }
@@ -98,7 +98,7 @@ int main() {
     solver.solve();
     solver.saveBinarySolution("../data", "sine_wave");
     MetadataWriter(solver).write("../data/sine_wave/metadata.json");
-    std::cout << "sine wave was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
+    std::cout << "sine wave was nan detected: " << solver.wasNanDetected() << std::endl;
 
     RandomInitialConditionConfig functionConfig;
     RandomInitialCondition f(functionConfig, false, true);
@@ -116,5 +116,5 @@ int main() {
     random_function_solver.solve();
     random_function_solver.saveBinarySolution("../data", "random_function");
     MetadataWriter(random_function_solver, f).write("../data/random_function/metadata.json");
-    std::cout << "random function was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
+    std::cout << "random function was nan detected: " << random_function_solver.wasNanDetected() << std::endl;
 }
