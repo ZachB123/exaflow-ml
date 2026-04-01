@@ -73,7 +73,7 @@ class BurgersSolver2d {
 
         void solve(double cq = 2.0);
 
-        std::vector<std::vector<double>> getSolution() const;
+        std::vector<Snapshot> getSolution() const;
 
         void saveSolution(const std::string& base_folder, const std::string& run_name, int gap) const;
 

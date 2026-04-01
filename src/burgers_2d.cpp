@@ -11,11 +11,15 @@
 
 #include "burgers_2d.h"
 
-/*
-    Each cell value lives at its centre: x_i = (i + 0.5)*dx, y_j = (j + 0.5)*dy.
-    Data layout: flat vector, idx(i,j) = i*Ny + j (j is the fast index).
-    All loops are  for(i) for(j)  so the inner loop walks through sequential memory addresses
- */
+namespace {
+    inline int idx(int i, int j, int Ny) {
+        return i * Ny + j;
+    }
+
+    inline int wrap(int a, int n) {
+        return (a % n + n) % n;
+    }
+}
 
 BurgersSolver2d::BurgersSolver2d(std::unique_ptr<BurgerScheme2D> scheme, 
                                  const SolverConfig2D& config):
@@ -84,7 +88,7 @@ double BurgersSolver2d::approximate_max_v() const {
 void BurgersSolver2d::solve(double cq) {
     std::cout << "Solving...\n";
 
-    if (!initial_conditions_u or !initial_conditions_v) {
+    if (!initial_conditions_u || !initial_conditions_v) {
         throw std::runtime_error("No Initial Condition Function.");
     }
 
@@ -101,26 +105,95 @@ void BurgersSolver2d::solve(double cq) {
     spatial_step_size_y = 0.01;
     double num_domain_points_x = std::floor(domain_length_x / spatial_step_size_x);
     double num_domain_points_y = std::floor(domain_length_y / spatial_step_size_y);
-    u.assign(num_domain_points_x, 0.0);
-    v.assign(num_domain_points_y, 0.0);
+    u.assign(num_domain_points_x * num_domain_points_y, 0.0);
+    v.assign(num_domain_points_y * num_domain_points_y, 0.0);
 
     most_recent_spatial_step_size_x = spatial_step_size_x;
     most_recent_spatial_step_size_y = spatial_step_size_y;
     most_recent_num_domain_points_x = num_domain_points_x;
     most_recent_num_domain_points_y = num_domain_points_y;
 
-    std::cout << "Computing with " << num_domain_points_x << "/" << num_domain_points_y << " in x/y.\n";
+    std::cout << "Computing with " << num_domain_points_x << "x" << num_domain_points_y << " domain points.\n";
 
     std::cout << "Setting initial conditions...\n";
-    // Cell centers: x = (i + 0.5)*dx,  y = (j + 0.5)*dy
     // i outer, j inner -> sequential memory access
     for (int i = 0; i < num_domain_points_x; ++i) {
-        double x = (i + 0.5) * spatial_step_size_x;
+        double x = i * spatial_step_size_x;
         for (int j = 0; j < num_domain_points_y; ++j) {
-            double y = (j + 0.5) * spatial_step_size_y;
-            u[i * num_domain_points_x + j] = initial_conditions_u(x, y);
-            v[i * num_domain_points_y + j] = initial_conditions_v(x, y);
+            double y = j * spatial_step_size_y;
+            u[idx(i, j, num_domain_points_y)] = initial_conditions_u(x, y);
+            v[idx(i, j, num_domain_points_y)] = initial_conditions_v(x, y);
         }
+    }
+
+    solution_history.clear();
+    solution_history.push_back({u, v});
+    std::vector<double> u_next(num_domain_points_x * num_domain_points_y, 0.0);
+    std::vector<double> v_next(num_domain_points_x * num_domain_points_y, 0.0);
+
+    for (int time_step = 0; time_step < time_steps; ++time_step) {
+        scheme->calculateNextU(
+            u,
+            v,
+            u_next,
+            v_next,
+            cq,
+            num_domain_points_x,
+            num_domain_points_y,
+            time_step_size,
+            spatial_step_size_x,
+            spatial_step_size_y,
+            kinematic_viscosity
+        );
+
+        if (!nan_detected) {
+            for (int i = 0; i < num_domain_points_x; i++) {
+                double x = i * spatial_step_size_x;
+                for (int j = 0; j < num_domain_points_y; ++j) {
+                    double y = j * spatial_step_size_y;
+                    if (std::isnan(u_next[idx(i, j, num_domain_points_y)])) {
+                        nan_detected = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        std::swap(u, u_next);
+        std::swap(v, v_next);
+
+        solution_history.push_back({u, v});
     }
 }
 
+std::vector<BurgersSolver2d::Snapshot> BurgersSolver2d::getSolution() const {
+    return solution_history;
+}
+
+void BurgersSolver2d::saveSolution(const std::string& base_folder, const std::string& run_name, int gap) const {
+
+}
+
+bool BurgersSolver2d::wasNanDetected() const {
+    return nan_detected;
+}
+
+int BurgersSolver2d::getNumDomainPointsX() const {
+    return most_recent_num_domain_points_x;
+}
+
+double BurgersSolver2d::getSpatialStepSizeX() const {
+    return most_recent_spatial_step_size_x;
+}
+
+int BurgersSolver2d::getNumDomainPointsY() const {
+    return most_recent_num_domain_points_y;
+}
+
+double BurgersSolver2d::getSpatialStepSizeY() const {
+    return most_recent_spatial_step_size_y;
+}
+
+std::string BurgersSolver2d::getSchemeName() const {
+    return scheme->getName();
+}
