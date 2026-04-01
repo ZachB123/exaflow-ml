@@ -171,7 +171,48 @@ std::vector<BurgersSolver2d::Snapshot> BurgersSolver2d::getSolution() const {
 }
 
 void BurgersSolver2d::saveSolution(const std::string& base_folder, const std::string& run_name, int gap) const {
+    if (!std::filesystem::exists(base_folder)) {
+        std::filesystem::create_directory(base_folder);
+    }
 
+    // create (or recreate) run folder
+    std::string run_folder = base_folder + "/" + run_name;
+    if (std::filesystem::exists(run_folder)) {
+        std::cout << "Overwriting existing folder: " << run_folder << std::endl;
+        std::filesystem::remove_all(run_folder); // delete everything inside
+    }
+    std::filesystem::create_directory(run_folder);
+
+    // Write one file per time step
+    std::cout << "Writing results to: " << run_folder << std::endl;
+    for (size_t t = 0; t < solution_history.size(); ++t) {
+        if (t % gap != 0) {
+            continue;
+        }
+
+        std::ostringstream filename;
+        filename << run_folder << "/timestep_" << std::setw(5) << std::setfill('0') << t << ".csv";
+        
+        std::ofstream file(filename.str());
+        if (!file.is_open()) {
+            std::cerr << "Failed to open file: " << filename.str() << std::endl;
+            continue;
+        }
+
+        file << "x,y,u,v\n";
+        const auto &s_u = solution_history[t].u;
+        const auto &s_v = solution_history[t].v;
+        for (int i = 0; i < most_recent_num_domain_points_x; i++) {
+            double x = i * most_recent_spatial_step_size_x;
+            for (int j = 0; j < most_recent_num_domain_points_y; ++j) {
+                double y = j * most_recent_spatial_step_size_y;
+                int k = idx(i, j, most_recent_num_domain_points_y);
+                file << x << "," << y << "," << s_u[k] << "," << s_v[k] << "\n";
+            }
+        }   
+    }
+
+    std::cout << "All timesteps written successfully.\n";
 }
 
 bool BurgersSolver2d::wasNanDetected() const {
