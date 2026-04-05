@@ -131,70 +131,66 @@ def get_feature_matrices_for_sample(sample_name, seed):
         if t_next_index_upper >= burgers_solution.time_steps:
             t_next_index_upper = burgers_solution.time_steps - 1
         
-        # Build all x coordinates we need for this timestep (center + radius points)
-        all_x_coords = []
+        weight = t_index_float - t_index_lower
+        weight_next = t_next_index_float - t_next_index_lower
         
-        for spatial_step in sampled_spatial_steps:
-            for offset in range(-U_RADIUS, U_RADIUS + 1):
-                x = (spatial_step + offset) * coarse_dx
-                all_x_coords.append(x)
+        # Optimization 1: Direct integer indexing (no np.interp)
+        # Since coarse_dx = fine_dx * COARSENESS_MULTIPLIER, spatial_step indices directly map to fine grid
+        fine_indices = (sampled_spatial_steps[:, np.newaxis] + np.arange(-U_RADIUS, U_RADIUS + 1)) * COARSENESS_MULTIPLIER
+        fine_indices = fine_indices.astype(int)
         
-        if len(all_x_coords) == 0:
-            continue
-        
-        all_x_coords = np.array(all_x_coords)
-        
-        # Vectorized spatial interpolation for current and next times
-        # Get u values at all x positions, with temporal interpolation
-        u_curr_lower = np.interp(all_x_coords, burgers_solution._x_array, burgers_solution._u[t_index_lower, :])
+        # Fetch u values from fine grid (no interpolation needed since indices are integer-aligned)
+        u_curr_lower = burgers_solution._u[t_index_lower, fine_indices]
         if t_index_lower == t_index_upper:
             u_curr_all = u_curr_lower
         else:
-            u_curr_upper = np.interp(all_x_coords, burgers_solution._x_array, burgers_solution._u[t_index_upper, :])
-            weight = t_index_float - t_index_lower
+            u_curr_upper = burgers_solution._u[t_index_upper, fine_indices]
             u_curr_all = u_curr_lower * (1 - weight) + u_curr_upper * weight
         
         # Same for next time
-        u_next_lower = np.interp(all_x_coords, burgers_solution._x_array, burgers_solution._u[t_next_index_lower, :])
+        u_next_lower = burgers_solution._u[t_next_index_lower, fine_indices]
         if t_next_index_lower == t_next_index_upper:
             u_next_all = u_next_lower
         else:
-            u_next_upper = np.interp(all_x_coords, burgers_solution._x_array, burgers_solution._u[t_next_index_upper, :])
-            weight_next = t_next_index_float - t_next_index_lower
+            u_next_upper = burgers_solution._u[t_next_index_upper, fine_indices]
             u_next_all = u_next_lower * (1 - weight_next) + u_next_upper * weight_next
         
-        # Now reorganize u values by spatial step (group into center + radius offsets per step)
-        num_points = len(sampled_spatial_steps)
-        batch_X = []
-        batch_y = []
+        # Optimization 2: Fully vectorized inner loop
+        # u_curr_all shape: (num_spatial_points, 2*U_RADIUS+1)
+        # Extract center, minus, plus directly as arrays
+        u_i = u_curr_all[:, U_RADIUS]
+        u_i_minus_1 = u_curr_all[:, U_RADIUS - 1]
+        u_i_plus_1 = u_curr_all[:, U_RADIUS + 1]
+        u_next_i = u_next_all[:, U_RADIUS]
         
-        for pt_idx, spatial_step in enumerate(sampled_spatial_steps):
-            # Extract the u values for this spatial step (center + radius points)
-            start_idx = pt_idx * (2 * U_RADIUS + 1)
-            end_idx = start_idx + (2 * U_RADIUS + 1)
-            
-            additional_u_features = u_curr_all[start_idx:end_idx]
-            u_i = additional_u_features[U_RADIUS]
-            u_i_minus_1 = additional_u_features[U_RADIUS - 1]
-            u_i_plus_1 = additional_u_features[U_RADIUS + 1]
-            
-            # u_next_i for the center point
-            u_next_i = u_next_all[start_idx + U_RADIUS]
-            
-            # Check if artificial viscosity is required
-            ux = (u_i_plus_1 - u_i_minus_1) / (2.0 * coarse_dx)
-            if ux < 0:
-                # Vectorized cq computation (even for single point, use scalar -> array -> scalar for consistency)
-                cq = reverse_engineer_cq(coarse_dt, coarse_dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu)
-                
-                if cq is not None and not np.isnan(cq) and not np.isinf(cq):
-                    del_u_del_x = ux
-                    del_u_del_x_squared = (u_i_plus_1 - 2 * u_i + u_i_minus_1) / (coarse_dx**2)
-                    batch_X.append([coarse_dt, coarse_dx, del_u_del_x, del_u_del_x_squared] + list(additional_u_features) + [nu])
-                    batch_y.append(cq)
+        # Compute ux vectorized
+        ux_array = (u_i_plus_1 - u_i_minus_1) / (2.0 * coarse_dx)
         
-        # Batch extend (one extend per timestep instead of one append per point)
-        if batch_X:
+        # Call reverse_engineer_cq on full array
+        cq_array = reverse_engineer_cq(coarse_dt, coarse_dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu)
+        
+        # Filter valid entries: requires_av (ux < 0) AND cq valid
+        valid_mask = (ux_array < 0) & ~np.isnan(cq_array) & ~np.isinf(cq_array)
+        valid_indices = np.where(valid_mask)[0]
+        
+        # Build batch for valid entries only (vectorized)
+        if len(valid_indices) > 0:
+            del_u_del_x = ux_array[valid_indices]
+            del_u_del_x_squared = (u_i_plus_1[valid_indices] - 2 * u_i[valid_indices] + u_i_minus_1[valid_indices]) / (coarse_dx**2)
+            cq_valid = cq_array[valid_indices]
+            
+            # Build feature array
+            n_valid = len(valid_indices)
+            batch_X = np.column_stack([
+                np.full(n_valid, coarse_dt),
+                np.full(n_valid, coarse_dx),
+                del_u_del_x,
+                del_u_del_x_squared,
+                u_curr_all[valid_indices, :],
+                np.full(n_valid, nu)
+            ])
+            batch_y = cq_valid
+            
             X_rows.extend(batch_X)
             y_rows.extend(batch_y)
 
