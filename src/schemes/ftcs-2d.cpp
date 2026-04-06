@@ -31,11 +31,11 @@ void FTCS2D::calculateNextUandV(
             double d2v_dx2 = (v[i + 1][j] - 2 * v[i][j] + v[i - 1][j]) / (spatial_step_size_x * spatial_step_size_x);
             double d2v_dy2 = (v[i][j + 1] - 2 * v[i][j] + v[i][j - 1]) / (spatial_step_size_y * spatial_step_size_y);
 
-            double artificial_viscosity = calculateArtificialViscosity(u, cq, spatial_step_size_x, spatial_step_size_y, i, j, num_domain_points_x, num_domain_points_y);
+            double artificial_viscosity = calculateArtificialViscosity(u, v, cq, spatial_step_size_x, spatial_step_size_y, i, j, num_domain_points_x, num_domain_points_y);
 
-            u_next[i][j] = u[i][j] - u[i][j] * time_step_size * (du_dx + du_dy) + (kinematic_viscosity + artificial_viscosity) * time_step_size * (d2u_dx2 + d2u_dy2);
+            u_next[i][j] = u[i][j] - time_step_size * (u[i][j] * du_dx + v[i][j] * du_dy) + (kinematic_viscosity + artificial_viscosity) * time_step_size * (d2u_dx2 + d2u_dy2);
 
-            v_next[i][j] = v[i][j] - v[i][j] * time_step_size * (dv_dx + dv_dy) + (kinematic_viscosity + artificial_viscosity) * time_step_size * (d2v_dx2 + d2v_dy2);
+            v_next[i][j] = v[i][j] - time_step_size * (u[i][j] * dv_dx + v[i][j] * dv_dy) + (kinematic_viscosity + artificial_viscosity) * time_step_size * (d2v_dx2 + d2v_dy2);
         }
     }
 }
