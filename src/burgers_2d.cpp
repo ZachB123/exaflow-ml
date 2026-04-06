@@ -15,10 +15,6 @@ namespace {
     inline int idx(int i, int j, int Ny) {
         return i * Ny + j;
     }
-
-    inline int wrap(int a, int n) {
-        return (a % n + n) % n;
-    }
 }
 
 BurgersSolver2d::BurgersSolver2d(std::unique_ptr<BurgerScheme2D> scheme, 
