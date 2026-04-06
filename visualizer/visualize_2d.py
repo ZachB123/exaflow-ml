@@ -6,7 +6,7 @@ Interactive animated visualizer for the 2D Godunov Burgers solver output.
 Usage:
     python visualize_godunov2d.py <run_folder> [--speed N]
 
-Examples:
+Examples:pyt
     python visualize_godunov2d.py data_2d/godunov_squarewave
     python visualize_godunov2d.py data_2d/godunov_gaussian --speed 3
 
@@ -143,7 +143,7 @@ def run_visualizer(folder_name: str, initial_speed: int):
 
     pcm = ax_heat.pcolormesh(
         Xe, Ye, U_frames[0],
-        cmap="RdBu_r", vmin=u_min, vmax=u_max, shading="flat")
+        cmap="Blues", vmin=u_min, vmax=u_max, shading="flat")
     fig.colorbar(pcm, ax=ax_heat, label="u")
     ax_heat.set_xlabel("x")
     ax_heat.set_ylabel("y")

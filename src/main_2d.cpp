@@ -20,7 +20,11 @@ int main() {
         return (x >= 0.5 && x <= 1.0 && y >= 0.5 && y <= 1.0) ? 2.0 : 1.0;
     };
 
-    BurgersSolver2d step_function_solver(std::make_unique<Godunov2D>(), step_function_config, square_wave, square_wave);
+    std::function<double(double, double)> zero = [](double x, double y) -> double {
+        return 0.0;
+    };
+
+    BurgersSolver2d step_function_solver(std::make_unique<Godunov2D>(), step_function_config, square_wave, zero);
 
     step_function_solver.solve();
     step_function_solver.saveSolution("../data_2d", "step_function", 1);
