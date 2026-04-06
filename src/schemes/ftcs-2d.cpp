@@ -3,8 +3,11 @@
 #include "burger_scheme_2d.h"
 #include <cmath>
 
-void FTCS2D::calculateNextU(
-    const std::vector<std::vector<double>>& u, std::vector<std::vector<double>>& u_next, 
+void FTCS2D::calculateNextUandV(
+    const std::vector<std::vector<double>>& u,
+    const std::vector<std::vector<double>>& v,
+    std::vector<std::vector<double>>& u_next,
+    std::vector<std::vector<double>>& v_next,
     double cq, 
     int num_domain_points_x, 
     int num_domain_points_y, 
@@ -21,6 +24,12 @@ void FTCS2D::calculateNextU(
 
             double d2u_dx2 = (u[i + 1][j] - 2 * u[i][j] + u[i - 1][j]) / (spatial_step_size_x * spatial_step_size_x);
             double d2u_dy2 = (u[i][j + 1] - 2 * u[i][j] + u[i][j - 1]) / (spatial_step_size_y * spatial_step_size_y);
+
+            double dv_dx = (v[i + 1][j] - v[i - 1][j]) / (2.0 * spatial_step_size_x);
+            double dv_dy = (v[i][j + 1] - v[i][j - 1]) / (2.0 * spatial_step_size_y);
+
+            double d2v_dx2 = (v[i + 1][j] - 2 * v[i][j] + v[i - 1][j]) / (spatial_step_size_x * spatial_step_size_x);
+            double d2v_dy2 = (v[i][j + 1] - 2 * v[i][j] + v[i][j - 1]) / (spatial_step_size_y * spatial_step_size_y);
 
             double artificial_viscosity = calculateArtificialViscosity(u, cq, spatial_step_size_x, spatial_step_size_y, i, j, num_domain_points_x, num_domain_points_y);
 
