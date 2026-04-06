@@ -34,6 +34,7 @@ set(SHARED_SOURCES
     src/schemes/ftcs.cpp
     src/schemes/lax_wendroff.cpp
     src/schemes/godunov.cpp
+    src/schemes/ftcs_conservative.cpp
 )
 
 # regular experimental solver
