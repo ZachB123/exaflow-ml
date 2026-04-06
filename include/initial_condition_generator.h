@@ -5,6 +5,8 @@
 #include <ostream>
 #include <filesystem>
 
+#include "metadata_writer.h"
+
 
 struct RandomInitialConditionConfig {
     int n = 5;
@@ -17,7 +19,7 @@ struct RandomInitialConditionConfig {
     int wrap_around_frequency_multiplier_max = 5;
 };
 
-class RandomInitialCondition {
+class RandomInitialCondition : public IMetadataProvider {
 
 public:
 
@@ -35,13 +37,7 @@ public:
 
     double operator()(double x) const;
 
-    void saveMetadataJSON(const std::filesystem::path& base_path,
-                      const std::filesystem::path& sample_folder,
-                      int time_steps,
-                      double time_step_size,
-                      int num_domain_points,
-                      double spatial_step_size,
-                      const std::string& scheme_name) const;
+    void appendMetadata(nlohmann::json& metadata) const override;
 
 
     std::string toString() const;

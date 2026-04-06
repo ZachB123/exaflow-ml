@@ -15,26 +15,22 @@ class BurgersSolution:
         if not os.path.exists(self.sample_dir):
             raise ValueError(f"Sample directory does not exist: {self.sample_dir}")
 
-        metadata_path = os.path.join(self.sample_dir, METADATA_FILENAME)
+        self._cache = {}
 
-        if not os.path.exists(metadata_path):
-            raise ValueError(f"Metadata file not found: {metadata_path}")
+        # get solution files
+        self.solution_bin_path = os.path.join(self.sample_dir, SOLUTION_DATA_FILENAME)
+        self.metadata_path = os.path.join(self.sample_dir, METADATA_FILENAME)
+        if not os.path.exists(self.solution_bin_path):
+            raise ValueError(f"Binary solution file not found: {self.solution_bin_path}")
+        if not os.path.exists(self.metadata_path):
+            raise ValueError(f"Binary solution metadata file not found: {self.metadata_path}")
 
-        with open(metadata_path, 'r') as f:
+        # Parse solution metadata (JSON)
+        with open(self.metadata_path, "r") as f:
             self.metadata = json.load(f)
 
         self.config = self.metadata[CONFIG_KEY]
         self.solver = self.metadata[SOLVER_KEY]
-
-        self.domain_length = (self.solver[NUM_DOMAIN_POINTS_KEY] - 1) * self.solver[SPATIAL_STEP_SIZE_KEY]
-
-        self.spatial_step_size = self.solver[SPATIAL_STEP_SIZE_KEY]
-        self.num_domain_points = self.solver[NUM_DOMAIN_POINTS_KEY]
-        self.time_steps = self.solver[TIME_STEPS_KEY]
-        self.time_step_size = self.solver[TIME_STEP_SIZE_KEY]
-        self.max_time = (self.time_steps - 1) * self.time_step_size
-
-        self._cache = {}
 
         try:
             bias = float(self.metadata[BIAS_KEY])
@@ -63,6 +59,25 @@ class BurgersSolution:
             ),
         }
 
+        self.time_steps = int(self.metadata[SOLVER_KEY][TIME_STEPS_KEY])
+        self.time_step_size = float(self.metadata[SOLVER_KEY][TIME_STEP_SIZE_KEY])
+        self.max_time = (self.time_steps - 1) * self.time_step_size
+
+        self.spatial_step_size = float(self.metadata[SOLVER_KEY][SPATIAL_STEP_SIZE_KEY])
+        self.num_domain_points = int(self.metadata[SOLVER_KEY][NUM_DOMAIN_POINTS_KEY])
+        self.domain_length = float(self.num_domain_points - 1) * self.spatial_step_size
+
+        # Memory-mapped 2D array; does not load everything into RAM, only time steps as requested
+        self._u = np.memmap(
+            self.solution_bin_path,
+            dtype=np.float64,
+            mode="r",
+            shape=(self.time_steps, self.num_domain_points)
+        )
+
+        # x_array will be the same for all time steps, generate now to return with get_time_step_data()
+        self._x_array = self.spatial_step_size * np.arange(self.num_domain_points)
+
 
     def initial_condition(self, x):
         if x < 0 or x > self.domain_length:
@@ -85,29 +100,24 @@ class BurgersSolution:
 
 
     def get_time_step(self, time_step_index):
-
+        
+        # Check cache first
         if time_step_index in self._cache:
             return self._cache[time_step_index]
 
+        # Check bounds
         if time_step_index < 0 or time_step_index >= self.time_steps:
             raise ValueError(
                 f"Time step index {time_step_index} out of bounds "
                 f"[0, {self.time_steps - 1}]"
             )
 
-        csv_filename = CSV_FILENAME_FORMAT.format(time_step_index)
-        csv_path = os.path.join(self.sample_dir, csv_filename)
+        # Pull u from memmap
+        u_array = self._u[time_step_index, :].copy()
 
-        if not os.path.exists(csv_path):
-            raise FileNotFoundError(f"CSV file not found: {csv_path}")
-
-        df = pd.read_csv(csv_path)
-
-        x_array = df[X_COLUMN].values
-        u_array = df[U_COLUMN].values
-
+        x_array = self._x_array
+        
         self._cache[time_step_index] = (x_array, u_array)
-
         return x_array, u_array
 
 
