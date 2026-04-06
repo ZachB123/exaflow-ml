@@ -42,7 +42,8 @@ void FTCS2D::calculateNextUandV(
 
 
 double FTCS2D::calculateArtificialViscosity(
-    const std::vector<std::vector<double>>& u, 
+    const std::vector<std::vector<double>>& u,
+    const std::vector<std::vector<double>>& v, 
     double cq, 
     double spatial_step_size_x, 
     double spatial_step_size_y, 
@@ -53,9 +54,10 @@ double FTCS2D::calculateArtificialViscosity(
     const {
 
     double ux = (u[i + 1][j] - u[i - 1][j]) / (2.0 * spatial_step_size_x);
-    double uy = (u[i][j + 1] - u[i][j - 1]) / (2.0 * spatial_step_size_y);
+    double vy = (v[i][j + 1] - v[i][j - 1]) / (2.0 * spatial_step_size_y);
 
-    double compression = ux + uy;
+    double compression = ux + vy;
+
     double artificial_viscosity = (compression < 0) ? cq * (spatial_step_size_x * spatial_step_size_x + spatial_step_size_y * spatial_step_size_y) * std::abs(compression) : 0.0;
 
     return artificial_viscosity;    
