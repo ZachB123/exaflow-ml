@@ -35,6 +35,13 @@ set(SHARED_SOURCES
     src/schemes/godunov.cpp
 )
 
+set(SHARED_SOURCES_2D
+    src/burgers_2d.cpp
+    src/schemes/ftcs_2d.cpp
+    src/schemes/lax_wendroff_2d.cpp
+    src/schemes/godunov_2d.cpp
+)
+
 # regular experimental solver
 add_executable(burgers
     src/main.cpp
@@ -47,4 +54,11 @@ add_executable(training_data_generator
     src/training_data_generator.cpp
     ${SHARED_SOURCES}
 )
+
+# 2D burgers' solver
+add_executable(burgers_2d
+    src/main_2d.cpp
+    ${SHARED_SOURCES_2D}
+)
+
 target_link_libraries(training_data_generator PRIVATE nlohmann_json::nlohmann_json)
