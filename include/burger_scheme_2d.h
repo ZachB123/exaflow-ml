@@ -4,67 +4,57 @@
 #include <string>
 
 class BurgerScheme2D {
-    public:
-        // destructor
-        virtual ~BurgerScheme2D() = default;
+public:
+    virtual ~BurgerScheme2D() = default;
 
-        // function for calculateNextU, implemented in subclasses
-        // = 0 enforces its implementation in the subclasses
-        virtual void calculateNextU(
-                    const std::vector<std::vector<double>>& u, 
-                    std::vector<std::vector<double>>& u_next, 
-                    double cq, 
-                    int num_domain_points_x, 
-                    int num_domain_points_y, 
-                    double time_step_size,
-                    double spatial_step_size_x, 
-                    double spatial_step_size_y, 
-                    double kinematic_viscosity) = 0;
+    // Update both u and v for one time step
+    virtual void calculateNextU(
+        const std::vector<double>& u,
+        const std::vector<double>& v,
+        std::vector<double>& u_next,
+        std::vector<double>& v_next,
+        double cq,
+        int Nx,
+        int Ny,
+        double dt,
+        double dx,
+        double dy,
+        double kinematic_viscosity
+    ) = 0;
 
-        // get the name of the scheme
-        virtual std::string getName() const = 0;
-
-    protected:
-        // function to calculate artifiical viscosity, implemented in subclasses
-        virtual double calculateArtificialViscosity(
-            const std::vector<std::vector<double>>&, // u 
-            double, // cq 
-            double, // spatial_step_size_x
-            double, // spatial_step_size_y
-            int, // i
-            int, // j
-            int, // num_domain_points_x
-            int ) const // num_domain_points_y
-        {
-            return 0.0; // default: no artificial viscosity
-        }
+    virtual std::string getName() const = 0;
 };
 
 class FTCS2D : public BurgerScheme2D {
-    public:
-        void calculateNextU(
-                    const std::vector<std::vector<double>>& u, 
-                    std::vector<std::vector<double>>& u_next, 
-                    double cq, 
-                    int num_domain_points_x, 
-                    int num_domain_points_y, 
-                    double time_step_size,
-                    double spatial_step_size_x, 
-                    double spatial_step_size_y, 
-                    double kinematic_viscosity) override;
+public:
+    void calculateNextU(
+        const std::vector<double>& u,
+        const std::vector<double>& v,
+        std::vector<double>& u_next,
+        std::vector<double>& v_next,
+        double cq,
+        int Nx,
+        int Ny,
+        double dt,
+        double dx,
+        double dy,
+        double kinematic_viscosity
+    ) override;
 
-        std::string getName() const override;
-    
-    protected:
-        double calculateArtificialViscosity(
-            const std::vector<std::vector<double>>& u, 
-            double cq,
-            double spatial_step_size_x,
-            double spatial_step_size_y,
-            int i,
-            int j,
-            int num_domain_points_x,
-            int num_domain_points_y) const override;
+    std::string getName() const override;
+
+protected:
+    double calculateArtificialViscosity(
+        const std::vector<double>& u,
+        const std::vector<double>& v,
+        double cq,
+        double dx,
+        double dy,
+        int i,
+        int j,
+        int Nx,
+        int Ny
+    ) const;
 };
 
 class LaxWendroff2D : public BurgerScheme2D {
@@ -98,20 +88,25 @@ class LaxWendroff2D : public BurgerScheme2D {
 };
 
 class Godunov2D : public BurgerScheme2D {
-    public:
-        void calculateNextU(
-                    const std::vector<std::vector<double>>& u, 
-                    std::vector<std::vector<double>>& u_next, 
-                    // double cq, (unused)
-                    int num_domain_points_x, 
-                    int num_domain_points_y, 
-                    double time_step_size,
-                    double spatial_step_size_x, 
-                    double spatial_step_size_y, 
-                    double kinematic_viscosity) override;
+public:
+    void calculateNextU(
+        const std::vector<double>& u,
+        const std::vector<double>& v,
+        std::vector<double>& u_next,
+        std::vector<double>& v_next,
+        double cq,
+        int Nx,
+        int Ny,
+        double dt,
+        double dx,
+        double dy,
+        double kinematic_viscosity
+    ) override;
 
-        std::string getName() const override;
+    std::string getName() const override;
 
-    protected:
-        double godunovFlux(double u_left, double r_right, double u_up, double u_down) const;
+protected:
+    double godunovFlux(double qLeft, double qRight) const;
+    double transportFlux(double wLeft, double wRight,
+                         double qLeft, double qRight) const;
 };
