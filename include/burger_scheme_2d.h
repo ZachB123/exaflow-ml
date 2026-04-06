@@ -69,7 +69,7 @@ class FTCS2D : public BurgerScheme2D {
 
 class LaxWendroff2D : public BurgerScheme2D {
     public:
-        void calculateNextU(
+        void calculateNextUandV(
                     const std::vector<std::vector<double>>& u,
                     const std::vector<std::vector<double>>& v, 
                     std::vector<std::vector<double>>& u_next,
@@ -87,6 +87,7 @@ class LaxWendroff2D : public BurgerScheme2D {
     protected:
         double calculateArtificialViscosity(
             const std::vector<std::vector<double>>& u,
+            const std::vector<std::vector<double>>& v,
             double cq,
             double spatial_step_size_x,
             double spatial_step_size_y,
