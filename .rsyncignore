@@ -1,0 +1,14 @@
+.vscode/
+build/
+data/
+venv/
+training_data/
+.DS_Store
+*.dat
+__pycache__/
+.claude/
+*.pkl
+*.npz
+*.pt
+*.png
+CLAUDE.md
