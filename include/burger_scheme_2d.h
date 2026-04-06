@@ -70,8 +70,10 @@ class FTCS2D : public BurgerScheme2D {
 class LaxWendroff2D : public BurgerScheme2D {
     public:
         void calculateNextU(
-                    const std::vector<std::vector<double>>& u, 
-                    std::vector<std::vector<double>>& u_next, 
+                    const std::vector<std::vector<double>>& u,
+                    const std::vector<std::vector<double>>& v, 
+                    std::vector<std::vector<double>>& u_next,
+                    std::vector<std::vector<double>>& v_next, 
                     double cq, 
                     int num_domain_points_x, 
                     int num_domain_points_y, 

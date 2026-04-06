@@ -1,7 +1,7 @@
 #include "burger_scheme_2d.h"
 #include <cmath>
 
-void LaxWendroff2D::calculateNextU(const std::vector<std::vector<double>>& u, std::vector<std::vector<double>>& u_next, double cq, int num_domain_points_x, int num_domain_points_y, double time_step_size, double spatial_step_size_x, double spatial_step_size_y, double kinematic_viscosity) {
+void LaxWendroff2D::calculateNextU(const std::vector<std::vector<double>>& u, const std::vector<std::vector<double>>& v, std::vector<std::vector<double>>& u_next, std::vector<std::vector<double>>& v_next, double cq, int num_domain_points_x, int num_domain_points_y, double time_step_size, double spatial_step_size_x, double spatial_step_size_y, double kinematic_viscosity) {
     double dt = time_step_size;
     double dx = spatial_step_size_x;
     double dy = spatial_step_size_y;
