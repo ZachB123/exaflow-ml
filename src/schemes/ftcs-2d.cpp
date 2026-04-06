@@ -34,6 +34,8 @@ void FTCS2D::calculateNextUandV(
             double artificial_viscosity = calculateArtificialViscosity(u, cq, spatial_step_size_x, spatial_step_size_y, i, j, num_domain_points_x, num_domain_points_y);
 
             u_next[i][j] = u[i][j] - u[i][j] * time_step_size * (du_dx + du_dy) + (kinematic_viscosity + artificial_viscosity) * time_step_size * (d2u_dx2 + d2u_dy2);
+
+            v_next[i][j] = v[i][j] - v[i][j] * time_step_size * (dv_dx + dv_dy) + (kinematic_viscosity + artificial_viscosity) * time_step_size * (d2v_dx2 + d2v_dy2);
         }
     }
 }
