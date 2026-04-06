@@ -25,7 +25,7 @@ namespace {
     }
 }
 
-void Godunov2D::calculateNextU(
+void Godunov2D::calculateNextUandV(
     const std::vector<double>& u,
     const std::vector<double>& v,
     std::vector<double>& u_next,

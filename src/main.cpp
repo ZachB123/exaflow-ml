@@ -7,7 +7,6 @@
 #include "burger_scheme.h"
 #include "burgers.h"
 #include "initial_condition_generator.h"
-#include "metadata_writer.h"
 
 int main() {
 

@@ -8,7 +8,7 @@ public:
     virtual ~BurgerScheme2D() = default;
 
     // Update both u and v for one time step
-    virtual void calculateNextU(
+    virtual void calculateNextUandV(
         const std::vector<double>& u,
         const std::vector<double>& v,
         std::vector<double>& u_next,
@@ -27,7 +27,7 @@ public:
 
 class FTCS2D : public BurgerScheme2D {
 public:
-    void calculateNextU(
+    void calculateNextUandV(
         const std::vector<double>& u,
         const std::vector<double>& v,
         std::vector<double>& u_next,
@@ -89,7 +89,7 @@ class LaxWendroff2D : public BurgerScheme2D {
 
 class Godunov2D : public BurgerScheme2D {
 public:
-    void calculateNextU(
+    void calculateNextUandV(
         const std::vector<double>& u,
         const std::vector<double>& v,
         std::vector<double>& u_next,
