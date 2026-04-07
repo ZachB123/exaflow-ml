@@ -1,7 +1,7 @@
 #include "burger_scheme_2d.h"
 #include <cmath>
 
-void LaxWendroff2D::calculateNextUandV(const std::vector<std::vector<double>>& u, const std::vector<std::vector<double>>& v, std::vector<std::vector<double>>& u_next, std::vector<std::vector<double>>& v_next, double cq, int num_domain_points_x, int num_domain_points_y, double time_step_size, double spatial_step_size_x, double spatial_step_size_y, double kinematic_viscosity) {
+void LaxWendroff2D::calculateNextUandV(const std::vector<double>& u, const std::vector<double>& v, std::vector<double>& u_next, std::vector<double>& v_next, double cq, int num_domain_points_x, int num_domain_points_y, double time_step_size, double spatial_step_size_x, double spatial_step_size_y, double kinematic_viscosity) {
     double dt = time_step_size;
     double dx = spatial_step_size_x;
     double dy = spatial_step_size_y;
@@ -89,7 +89,7 @@ void LaxWendroff2D::calculateNextUandV(const std::vector<std::vector<double>>& u
     v_next[num_domain_points_x - 1][num_domain_points_y - 1] = v_next[0][0];
 }
 
-double LaxWendroff2D::calculateArtificialViscosity(const std::vector<std::vector<double>>& u, const std::vector<std::vector<double>>& v, double cq, double spatial_step_size_x, double spatial_step_size_y, int i, int j, int num_domain_points_x, int num_domain_points_y) const {
+double LaxWendroff2D::calculateArtificialViscosity(const std::vector<double>& u, const std::vector<double>& v, double cq, double spatial_step_size_x, double spatial_step_size_y, int i, int j, int num_domain_points_x, int num_domain_points_y) const {
     int ip = (i + 1) % (num_domain_points_x - 1);
     int im = (i - 1 + (num_domain_points_x - 1)) % (num_domain_points_x - 1);
     int jp = (j + 1) % (num_domain_points_y - 1);
