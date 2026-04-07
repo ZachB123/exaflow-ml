@@ -82,6 +82,161 @@ def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):
 
         return cq
 
+# write reverse_engineer_cq_ftcs, similar to the earlier function but with the FTCS scheme for the advection term
+
+def reverse_engineer_cq_ftcs(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):
+    """Vectorized version: accepts scalars or numpy arrays. Returns cq or array of cqs (None for invalid)."""
+
+    # Compute ux for all points (vectorized)
+    ux = (u_i_plus_1 - u_i_minus_1) / (2.0 * dx)
+
+    # Only compute cq where ux < 0 (requires artificial viscosity)
+    requires_av = ux < 0
+
+    # Initialize cq array with None values (as nan for now)
+    if isinstance(u_i, np.ndarray):
+        cq_result = np.full_like(u_i, np.nan, dtype=float)
+    else:
+        # Scalar case
+        if not requires_av:
+            return None
+        cq_result = None
+
+    if isinstance(u_i, np.ndarray):
+        # Vectorized path: u_i, u_next_i, etc. are arrays
+        numerator = (
+            u_next_i - u_i
+            + u_i * (dt / (2 * dx)) * (u_i_plus_1 - u_i_minus_1)
+            - nu * (dt / dx**2) * (u_i_plus_1 - 2 * u_i + u_i_minus_1)
+        )
+
+        denominator = (
+            np.abs(ux)
+            * dt
+            * (u_i_plus_1 - 2 * u_i + u_i_minus_1)
+        )
+
+        # Only compute where ux < 0
+        valid_mask = (np.abs(denominator) >= CQ_DENOMINATOR_EPSILON) & requires_av
+
+        cq_array = np.full_like(u_i, np.nan, dtype=float)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            cq_array[valid_mask] = numerator[valid_mask] / denominator[valid_mask]
+
+        # Apply magnitude threshold
+        cq_result = cq_array.copy()
+        cq_result[np.abs(cq_array) >= CQ_MAX_MAGNITUDE] = np.nan
+
+        return cq_result
+    else:
+        # Scalar path (original logic)
+        numerator = (
+            u_next_i - u_i
+            + u_i * (dt / dx) * (u_i_plus_1 - u_i_minus_1)
+            - nu * (dt / dx**2) * (u_i_plus_1 - 2 * u_i + u_i_minus_1)
+        )
+
+        denominator = (
+            abs(ux)
+            * dt
+            * (u_i_plus_1 - 2 * u_i + u_i_minus_1)
+        )
+
+        if abs(denominator) < CQ_DENOMINATOR_EPSILON:
+            return None
+
+        cq = numerator / denominator
+
+        if abs(cq) >= CQ_MAX_MAGNITUDE:
+            return None
+
+        return cq
+
+# write reverse_engineer_cq_lax_wendroff, similar to the earlier function but with the Lax-Wendroff scheme for the advection term
+
+def reverse_engineer_cq_lax_wendroff(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):
+    """Vectorized version: accepts scalars or numpy arrays. Returns cq or array of cqs (None for invalid)."""
+
+    # Compute ux for all points (vectorized)
+    ux = (u_i_plus_1 - u_i_minus_1) / (2.0 * dx)
+
+    # Only compute cq where ux < 0 (requires artificial viscosity)
+    requires_av = ux < 0
+
+    # Initialize cq array with None values (as nan for now)
+    if isinstance(u_i, np.ndarray):
+        cq_result = np.full_like(u_i, np.nan, dtype=float)
+    else:
+        # Scalar case
+        if not requires_av:
+            return None
+        cq_result = None
+
+    if isinstance(u_i, np.ndarray):
+        # Vectorized path: u_i, u_next_i, etc. are arrays
+        # fluxes
+        f_ip = 0.5 * u_i_plus_1**2
+        f_i  = 0.5 * u_i**2
+        f_im = 0.5 * u_i_minus_1**2
+
+        # local wave speeds
+        a_ip = 0.5 * (u_i + u_i_plus_1)
+        a_im = 0.5 * (u_i_minus_1 + u_i)
+
+        # Lax-Wendroff convective term (exact match to your C++)
+        convective = (
+            -(dt / (2 * dx)) * (f_ip - f_im)
+            + (dt**2 / (2 * dx**2)) * (a_ip * (f_ip - f_i) - a_im * (f_i - f_im))
+        )
+
+        # correct numerator
+        numerator = (
+            u_next_i - u_i
+            - convective
+            - nu * (dt / dx**2) * (u_i_plus_1 - 2 * u_i + u_i_minus_1)
+        )
+
+        denominator = (
+            np.abs(ux)
+            * dt
+            * (u_i_plus_1 - 2 * u_i + u_i_minus_1)
+        )
+
+        # Only compute where ux < 0
+        valid_mask = (np.abs(denominator) >= CQ_DENOMINATOR_EPSILON) & requires_av
+
+        cq_array = np.full_like(u_i, np.nan, dtype=float)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            cq_array[valid_mask] = numerator[valid_mask] / denominator[valid_mask]
+
+        # Apply magnitude threshold
+        cq_result = cq_array.copy()
+        cq_result[np.abs(cq_array) >= CQ_MAX_MAGNITUDE] = np.nan
+
+        return cq_result
+    else:
+        # Scalar path (original logic)
+        numerator = (
+            u_next_i - u_i
+            + u_i * (dt / (2 * dx)) * (u_i_plus_1 - u_i_minus_1)
+            - nu * (dt / dx**2) * (u_i_plus_1 - 2 * u_i + u_i_minus_1)
+        )
+
+        denominator = (
+            abs(ux)
+            * dt
+            * (u_i_plus_1 - 2 * u_i + u_i_minus_1)
+        )
+
+        if abs(denominator) < CQ_DENOMINATOR_EPSILON:
+            return None
+
+        cq = numerator / denominator
+
+        if abs(cq) >= CQ_MAX_MAGNITUDE:
+            return None
+
+        return cq
 
 def get_feature_matrices_for_sample(sample_name, seed):
     import time
