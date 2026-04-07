@@ -128,7 +128,7 @@ void BurgersSolver2d::solve(double cq) {
     std::vector<double> v_next(num_domain_points_x * num_domain_points_y, 0.0);
 
     for (int time_step = 0; time_step < time_steps; ++time_step) {
-        scheme->calculateNextU(
+        scheme->calculateNextUandV(
             u,
             v,
             u_next,

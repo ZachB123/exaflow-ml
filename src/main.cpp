@@ -14,9 +14,9 @@ int main() {
     SolverConfig wiki_config_base = {
         .kinematic_viscosity = 1.0, // Will be overwritten later
         .time_steps = 20000,
-        .domain_length = 24.0, // longer than shown on wikipedia to prevent like the boundary conditions from messing stuff up
-        .spatial_step_size = 0.01
-    };
+        .domain_length =
+            24.0, // longer than shown on wikipedia to prevent like the boundary conditions from messing stuff up
+        .spatial_step_size = 0.01};
 
     // Gaussian Initial Condition: u(x,0) = e^(-x^2/2)
     std::function<double(double)> gaussian_function = [](double x) -> double {
@@ -57,40 +57,30 @@ int main() {
     }
 
     SolverConfig step_function_config = {
-        .kinematic_viscosity = 0.01,
-        .time_steps = 2000,
-        .domain_length = 2.0,
-        .spatial_step_size = 0.01
-    };
+        .kinematic_viscosity = 0.01, .time_steps = 2000, .domain_length = 2.0, .spatial_step_size = 0.01};
 
-  // 1 everywhere in domain
-  // for 0.5 <= x <= 1 the function value is 2
-  std::function<double(double)> step_function = [](double x) -> double {
-    if (x >= 0.5 && x <= 1.0) {
-      return 2.0;
-    } else {
-      return 1.0;
-    }
-  };
+    // 1 everywhere in domain
+    // for 0.5 <= x <= 1 the function value is 2
+    std::function<double(double)> step_function = [](double x) -> double {
+        if (x >= 0.5 && x <= 1.0) {
+            return 2.0;
+        } else {
+            return 1.0;
+        }
+    };
 
     BurgersSolver1d step_function_solver(std::make_unique<Godunov>(), step_function_config, step_function);
 
-  step_function_solver.solve();
-  sstep_function_solver.saveBinarySolution("../data", "step_function");
+    step_function_solver.solve();
+    step_function_solver.saveBinarySolution("../data", "step_function");
     MetadataWriter(step_function_solver).write("../data/step_function/metadata.json");
     std::cout << "step function was nan detected: " << step_function_solver.wasNanDetected() << std::endl;
 
     SolverConfig sine_wave_config = {
-        .kinematic_viscosity = 0.01,
-        .time_steps = 5000,
-        .domain_length = 2.0 * M_PI,
-        .spatial_step_size = 0.01
-    };
+        .kinematic_viscosity = 0.01, .time_steps = 5000, .domain_length = 2.0 * M_PI, .spatial_step_size = 0.01};
 
     // initial condition: one full sine wave over [0, 2π]
-    std::function<double(double)> sine_function = [](double x) -> double { 
-        return std::sin(x);
-    };
+    std::function<double(double)> sine_function = [](double x) -> double { return std::sin(x); };
 
     BurgersSolver1d solver(std::make_unique<Godunov>(), sine_wave_config, sine_function);
 
