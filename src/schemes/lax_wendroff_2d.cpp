@@ -9,6 +9,8 @@ void LaxWendroff2D::calculateNextUandV(const std::vector<double>& u, const std::
     auto wrap_x = [num_domain_points_x](int i) { return (i + num_domain_points_x - 1) % (num_domain_points_x - 1); };
     auto wrap_y = [num_domain_points_y](int j) { return (j + num_domain_points_y - 1) % (num_domain_points_y - 1); };
 
+    auto idx = [num_domain_points_y](int i, int j) { return i * num_domain_points_y + j; };
+
     for (int i = 0; i < num_domain_points_x - 1; ++i) {
         for (int j = 0; j < num_domain_points_y - 1; ++j) {
 
@@ -19,19 +21,20 @@ void LaxWendroff2D::calculateNextUandV(const std::vector<double>& u, const std::
             int jm = wrap_y(j - 1);
 
             //calculating u_next[i][j]
-            double f_ip = 0.5 * u[ip][j] * u[ip][j];
-            double f_i  = 0.5 * u[i][j]  * u[i][j];
-            double f_im = 0.5 * u[im][j] * u[im][j];
+            double f_ip = 0.5 * u[idx(ip, j)] * u[idx(ip, j)];
+            double f_i  = 0.5 * u[idx(i, j)]  * u[idx(i, j)];
+            double f_im = 0.5 * u[idx(im, j)] * u[idx(im, j)];
 
-            double g_jp = u[i][jp] * v[i][jp];
-            double g_i  = u[i][j]  * v[i][j];
-            double g_jm = u[i][jm] * v[i][jm];
+            double g_jp = u[idx(i, jp)] * v[idx(i, jp)];
+            double g_i  = u[idx(i, j)]  * v[idx(i, j)];
+            double g_jm = u[idx(i, jm)] * v[idx(i, jm)];
 
-            double a_ip = 0.5 * (u[i][j] + u[ip][j]);
-            double a_im = 0.5 * (u[im][j] + u[i][j]);
+            double a_ip = 0.5 * (u[idx(i, j)] + u[idx(ip, j)]);
+            double a_im = 0.5 * (u[idx(im, j)] + u[idx(i, j)]);
 
-            double b_jp = 0.5 * (v[i][j] + v[i][jp]);
-            double b_jm = 0.5 * (v[i][jm] + v[i][j]);
+            double b_jp = 0.5 * (v[idx(i, j)] + v[idx(i, jp)]);
+            double b_jm = 0.5 * (v[idx(i, jm)] + v[idx(i, j)]);
+
 
             double convective_u =
                 - (dt / (2 * dx)) * (f_ip - f_im)
@@ -39,26 +42,26 @@ void LaxWendroff2D::calculateNextUandV(const std::vector<double>& u, const std::
                 - (dt / (2 * dy)) * (g_jp - g_jm)
                 + (dt * dt / (2 * dy * dy)) * (b_jp * (g_jp - g_i) - b_jm * (g_i - g_jm));
 
-            u_next[i][j] =
-                u[i][j] + convective_u +
+            u_next[idx(i, j)] =
+                u[idx(i, j)] + convective_u +
                 (kinematic_viscosity + artvis) * dt *
-                ((u[ip][j] - 2 * u[i][j] + u[im][j]) / (dx * dx)
-               + (u[i][jp] - 2 * u[i][j] + u[i][jm]) / (dy * dy));
+                ((u[idx(ip, j)] - 2 * u[idx(i, j)] + u[idx(im, j)]) / (dx * dx)
+               + (u[idx(i, jp)] - 2 * u[idx(i, j)] + u[idx(i, jm)]) / (dy * dy));
 
             //calculating v_next[i][j]
-            double p_ip = u[ip][j] * v[ip][j];
-            double p_i  = u[i][j]  * v[i][j]; 
-            double p_im = u[im][j] * v[im][j]; 
+            double p_ip = u[idx(ip, j)] * v[idx(ip, j)];
+            double p_i  = u[idx(i, j)]  * v[idx(i, j)];
+            double p_im = u[idx(im, j)] * v[idx(im, j)];
 
-            double q_jp = 0.5 * v[i][jp] * v[i][jp];
-            double q_i  = 0.5 * v[i][j]  * v[i][j]; 
-            double q_jm = 0.5 * v[i][jm] * v[i][jm]; 
+            double q_jp = 0.5 * v[idx(i, jp)] * v[idx(i, jp)];
+            double q_i  = 0.5 * v[idx(i, j)]  * v[idx(i, j)];
+            double q_jm = 0.5 * v[idx(i, jm)] * v[idx(i, jm)];
 
-            double c_ip = 0.5 * (u[i][j] + u[ip][j]); 
-            double c_im = 0.5 * (u[im][j] + u[i][j]); 
+            double c_ip = 0.5 * (u[idx(i, j)] + u[idx(ip, j)]);
+            double c_im = 0.5 * (u[idx(im, j)] + u[idx(i, j)]);
 
-            double d_jp = 0.5 * (v[i][j] + v[i][jp]); 
-            double d_jm = 0.5 * (v[i][jm] + v[i][j]); 
+            double d_jp = 0.5 * (v[idx(i, j)] + v[idx(i, jp)]);
+            double d_jm = 0.5 * (v[idx(i, jm)] + v[idx(i, j)]);
 
             double convective_v =
                 - (dt / (2 * dx)) * (p_ip - p_im)
@@ -66,27 +69,27 @@ void LaxWendroff2D::calculateNextUandV(const std::vector<double>& u, const std::
                 - (dt / (2 * dy)) * (q_jp - q_jm)
                 + (dt * dt / (2 * dy * dy)) * (d_jp * (q_jp - q_i) - d_jm * (q_i - q_jm)); 
 
-            v_next[i][j] =
-                v[i][j] + convective_v +
+            v_next[idx(i, j)] =
+                v[idx(i, j)] + convective_v +
                 (kinematic_viscosity + artvis) * dt *
-                ((v[ip][j] - 2 * v[i][j] + v[im][j]) / (dx * dx)
-               + (v[i][jp] - 2 * v[i][j] + v[i][jm]) / (dy * dy)); 
+                ((v[idx(ip, j)] - 2 * v[idx(i, j)] + v[idx(im, j)]) / (dx * dx)
+               + (v[idx(i, jp)] - 2 * v[idx(i, j)] + v[idx(i, jm)]) / (dy * dy));
         }
     }
 
     // enforce periodicity
     for (int j = 0; j < num_domain_points_y - 1; ++j) {
-        u_next[num_domain_points_x - 1][j] = u_next[0][j];
-        v_next[num_domain_points_x - 1][j] = u_next[0][j];
+        u_next[idx(num_domain_points_x - 1, j)] = u_next[idx(0, j)];
+        v_next[idx(num_domain_points_x - 1, j)] = v_next[idx(0, j)];
     }
 
     for (int i = 0; i < num_domain_points_x - 1; ++i) {
-        u_next[i][num_domain_points_y - 1] = u_next[i][0];
-        v_next[i][num_domain_points_y - 1] = u_next[i][0];
+        u_next[idx(i, num_domain_points_y - 1)] = u_next[idx(i, 0)];
+        v_next[idx(i, num_domain_points_y - 1)] = v_next[idx(i, 0)];
     }
 
-    u_next[num_domain_points_x - 1][num_domain_points_y - 1] = u_next[0][0];
-    v_next[num_domain_points_x - 1][num_domain_points_y - 1] = v_next[0][0];
+    u_next[idx(num_domain_points_x - 1, num_domain_points_y - 1)] = u_next[idx(0, 0)];
+    v_next[idx(num_domain_points_x - 1, num_domain_points_y - 1)] = v_next[idx(0, 0)];
 }
 
 double LaxWendroff2D::calculateArtificialViscosity(const std::vector<double>& u, const std::vector<double>& v, double cq, double spatial_step_size_x, double spatial_step_size_y, int i, int j, int num_domain_points_x, int num_domain_points_y) const {
@@ -94,9 +97,11 @@ double LaxWendroff2D::calculateArtificialViscosity(const std::vector<double>& u,
     int im = (i - 1 + (num_domain_points_x - 1)) % (num_domain_points_x - 1);
     int jp = (j + 1) % (num_domain_points_y - 1);
     int jm = (j - 1 + (num_domain_points_y - 1)) % (num_domain_points_y - 1);
-    
-    double ux = (u[ip][j] - u[im][j]) / (2.0 * spatial_step_size_x);
-    double vy = (v[i][jp] - v[i][jm]) / (2.0 * spatial_step_size_y);
+
+    auto idx = [num_domain_points_y](int i, int j) { return i * num_domain_points_y + j; };
+
+    double ux = (u[idx(ip, j)] - u[idx(im, j)]) / (2.0 * spatial_step_size_x);
+    double vy = (v[idx(i, jp)] - v[idx(i, jm)]) / (2.0 * spatial_step_size_y);
     // Only take artificial viscosity when in compression
     double artvis = (ux + vy < 0) ? cq * 0.5 * (spatial_step_size_x * spatial_step_size_x + spatial_step_size_y * spatial_step_size_y) * std::abs(ux + vy) : 0.0;
 
