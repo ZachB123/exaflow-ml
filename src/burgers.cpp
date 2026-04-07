@@ -11,12 +11,13 @@
 
 
 BurgersSolver1d::BurgersSolver1d(std::unique_ptr<BurgerScheme> scheme, const SolverConfig& config)
-    :   
+    :
         scheme(std::move(scheme)),
         kinematic_viscosity(config.kinematic_viscosity),
+        reynolds_number(config.reynolds_number),
         time_steps(config.time_steps),
         domain_length(config.domain_length),
-        time_step_size(config.time_step_size),
+        spatial_step_size(config.spatial_step_size),
         solution_history(),
         nan_detected(false)
 {}
@@ -26,57 +27,45 @@ BurgersSolver1d::BurgersSolver1d(
     const SolverConfig& config,
     const std::function<double(double)>& initial_conditions
 )
-    :   
+    :
         scheme(std::move(scheme)),
         kinematic_viscosity(config.kinematic_viscosity),
+        reynolds_number(config.reynolds_number),
         time_steps(config.time_steps),
         domain_length(config.domain_length),
-        time_step_size(config.time_step_size),
+        spatial_step_size(config.spatial_step_size),
         solution_history(),
         initial_conditions(initial_conditions),
         nan_detected(false)
-{}
+{
+    max_u = compute_max_abs(initial_conditions, domain_length);
+}
 
 void BurgersSolver1d::setInitialConditions(const std::function<double(double)>& initial_conditions) {
     this->initial_conditions = initial_conditions;
+    max_u = compute_max_abs(initial_conditions, domain_length);
 }
 
-double BurgersSolver1d::approximate_max_u() const {
-    double max_u = 0.0;
-    // this is a good approximation since the actual step size will be (time_step_size * max_u) / ALPHA
-    double approximate_step_size = time_step_size / ALPHA;
-    int approximate_number_of_domain_points = std::floor(domain_length / approximate_step_size);
-
-    for (int i = 0; i < approximate_number_of_domain_points; ++i) {
-        double x = i * approximate_step_size;
-        max_u = std::max(max_u, std::abs(initial_conditions(x)));
-    }
-
-    return max_u;
-}
 
 void BurgersSolver1d::solve(double cq) {
-    std::cout << "Solving...\n";
-
     if (!initial_conditions) {
         throw std::runtime_error("No Initial Condition Function.");
     }
     
     nan_detected = false;
-    double max_u = approximate_max_u();
-    // cfl condition
-    double spatial_step_size = time_step_size * max_u / ALPHA;
-    // This spatial stepsize is bullshit and not actually what we want to use
-    // if we use the previous calculation it just blows everything up
-    spatial_step_size = 0.01;
-    // spatial_step_size = domain_length / 1000.0;
-    double num_domain_points = std::floor(domain_length / spatial_step_size);
+    num_domain_points = std::floor(domain_length / spatial_step_size);
     u.assign(num_domain_points, 0.0);
 
-    most_recent_spatial_step_size = spatial_step_size;
-    most_recent_num_domain_points = num_domain_points;
+    double dt_advection = ALPHA * spatial_step_size / max_u;
+    double effective_viscosity = std::max(kinematic_viscosity, 1e-8);
+    double dt_diffusion = BETA * (spatial_step_size * spatial_step_size) / effective_viscosity;
+    double time_step_size = std::min(dt_advection, dt_diffusion);
+
+    computed_time_step_size = time_step_size;
 
     std::cout << "Computing with " << num_domain_points << " domain points.\n";
+    std::cout << "max_u = " << max_u << ", dt_advection = " << dt_advection
+              << ", dt_diffusion = " << dt_diffusion << " => using dt = " << time_step_size << "\n";
 
     std::cout << "Setting initial conditions...\n";
     for (int i = 0; i < num_domain_points; ++i) {
@@ -88,6 +77,7 @@ void BurgersSolver1d::solve(double cq) {
     std::vector<double> u_next(num_domain_points, 0.0);
     solution_history.push_back(u);
 
+    std::cout << "Solving...\n";
     for (int time_step = 0; time_step < time_steps; ++time_step) {
         scheme->calculateNextU(
             u, 
@@ -165,11 +155,12 @@ void BurgersSolver1d::saveBinarySolution(const std::string& base_folder, const s
 void BurgersSolver1d::appendMetadata(nlohmann::json& metadata) const {
     metadata["solver"] = {
         {"time_steps", solution_history.size()},
-        {"time_step_size", time_step_size},
-        {"num_domain_points", most_recent_num_domain_points},
-        {"spatial_step_size", most_recent_spatial_step_size},
+        {"time_step_size", computed_time_step_size},
+        {"num_domain_points", num_domain_points},
+        {"spatial_step_size", spatial_step_size},
         {"domain_length", domain_length},
         {"kinematic_viscosity", kinematic_viscosity},
+        {"reynolds_number", reynolds_number},
         {"scheme_name", scheme->getName()}
     };
 }
@@ -178,12 +169,16 @@ bool BurgersSolver1d::wasNanDetected() const {
     return nan_detected;
 }
 
+double BurgersSolver1d::getMaxU() const {
+    return max_u;
+}
+
 int BurgersSolver1d::getNumDomainPoints() const {
-    return most_recent_num_domain_points;
+    return num_domain_points;
 }
 
 double BurgersSolver1d::getSpatialStepSize() const {
-    return most_recent_spatial_step_size;
+    return spatial_step_size;
 }
 
 std::string BurgersSolver1d::getSchemeName() const {

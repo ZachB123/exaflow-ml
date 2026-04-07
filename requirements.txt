@@ -1,3 +1,6 @@
 numpy
 pandas
 matplotlib
+tqdm
+torch
+scikit-learn

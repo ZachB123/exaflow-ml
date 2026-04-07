@@ -5,6 +5,7 @@
 
 
 #include "initial_condition_generator.h"
+#include "math_utils.h"
 
 
 RandomInitialCondition::RandomInitialCondition(const RandomInitialConditionConfig& config, bool always_positive, bool wrapAround, unsigned seed)
@@ -46,6 +47,8 @@ RandomInitialCondition::RandomInitialCondition(const RandomInitialConditionConfi
         // only set the bias if always positive, otherwise we will just add 0
         bias = vertical_shift * 1.1;
     }
+
+    max_u = compute_max_abs(*this, domain_length);
 }
 
 double RandomInitialCondition::operator()(double x) const {
@@ -54,6 +57,10 @@ double RandomInitialCondition::operator()(double x) const {
         sum += t.amplitude * std::sin(t.frequency * (x - t.phase_shift));
     }
     return sum;
+}
+
+double RandomInitialCondition::getMaxU() const {
+    return max_u;
 }
 
 void RandomInitialCondition::appendMetadata(nlohmann::json& metadata) const {
@@ -77,6 +84,7 @@ void RandomInitialCondition::appendMetadata(nlohmann::json& metadata) const {
     }
     metadata["terms"] = terms_array;
     metadata["bias"] = bias;
+    metadata["max_u"] = max_u;
 }
 
 std::string RandomInitialCondition::toString() const {

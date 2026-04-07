@@ -4,39 +4,47 @@
 #include <memory>
 
 #include "burger_scheme.h"
+#include "math_utils.h"
 #include "metadata_writer.h"
 
 struct SolverConfig {
     // viscosity coefficient for viscous burgers
     double kinematic_viscosity;
+    // Reynolds number used to derive kinematic viscosity; 0 if not set via Re
+    int reynolds_number = 0;
     // how many iterations we will simulate
     int time_steps;
     // how long is the x axis are equation is defined on
     double domain_length;
-    // length of time each time step is
-    double time_step_size;
+    // spacing between adjacent grid points; dt is computed from this
+    double spatial_step_size;
 };
 
 class BurgersSolver1d : public IMetadataProvider {
 
 private:
-    // used for calculating spatial step size and number of domain points
-    inline static const double ALPHA = 0.9;
+    // CFL safety factor for the advection stability condition: dt_advection = ALPHA * dx / max_u
+    inline static const double ALPHA = 0.4;
+    // Safety factor for the explicit diffusion stability condition: dt_diffusion = BETA * dx^2 / nu
+    inline static const double BETA = 0.2;
 
     // scheme for solving
     std::unique_ptr<BurgerScheme> scheme;
 
     // kinematic viscosity as shown in the burgers equation
     const double kinematic_viscosity;
-    
+
+    // Reynolds number used to derive kinematic viscosity; 0 if not set via Re
+    const int reynolds_number;
+
     // how many times will we run our solver
     const int time_steps;
 
     // how long is our initial condition domain (x axis)
     const double domain_length;
 
-    // how much time do we step for each solver iteration
-    const double time_step_size;
+    // spacing between adjacent grid points (input); dt is derived from this
+    const double spatial_step_size;
 
     // the current velocity field
     std::vector<double> u;
@@ -47,13 +55,14 @@ private:
     // the function that we are using to define our initial conditions
     std::function<double(double)> initial_conditions;
 
-    // how many points we calculate the value for in our domain
-    int most_recent_num_domain_points;
+    // how many points we calculate the value for in our domain; set during solve()
+    int num_domain_points;
 
-    // how big of jumps we take in the domain duch that we have num_domain_points points
-    double most_recent_spatial_step_size;
+    // the time step size computed during solve() from the stability conditions
+    double computed_time_step_size;
 
-    double approximate_max_u() const;
+    // max absolute value of the initial condition, computed when IC is set
+    double max_u = 0.0;
 
     // tracks if a NaN was found during the solve
     bool nan_detected;
@@ -82,6 +91,8 @@ public:
     void appendMetadata(nlohmann::json& metadata) const override;
 
     bool wasNanDetected() const;
+
+    double getMaxU() const;
 
     int getNumDomainPoints() const;
 

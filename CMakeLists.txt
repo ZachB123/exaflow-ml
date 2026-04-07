@@ -29,6 +29,7 @@ add_compile_definitions(_USE_MATH_DEFINES)
 set(SHARED_SOURCES
     src/burgers.cpp
     src/initial_condition_generator.cpp
+    src/math_utils.cpp
     src/metadata_writer.cpp
     src/schemes/ftcs.cpp
     src/schemes/lax_wendroff.cpp
