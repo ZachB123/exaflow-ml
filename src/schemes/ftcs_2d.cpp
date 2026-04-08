@@ -4,10 +4,10 @@
 #include <cmath>
 
 void FTCS2D::calculateNextUandV(
-    const std::vector<std::vector<double>>& u,
-    const std::vector<std::vector<double>>& v,
-    std::vector<std::vector<double>>& u_next,
-    std::vector<std::vector<double>>& v_next,
+    const std::vector<double>& u,
+    const std::vector<double>& v,
+    std::vector<double>& u_next,
+    std::vector<double>& v_next,
     double cq, 
     int num_domain_points_x, 
     int num_domain_points_y, 
@@ -42,8 +42,8 @@ void FTCS2D::calculateNextUandV(
 
 
 double FTCS2D::calculateArtificialViscosity(
-    const std::vector<std::vector<double>>& u,
-    const std::vector<std::vector<double>>& v, 
+    const std::vector<double>& u,
+    const std::vector<double>& v, 
     double cq, 
     double spatial_step_size_x, 
     double spatial_step_size_y, 
