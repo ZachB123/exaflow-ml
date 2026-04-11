@@ -62,3 +62,7 @@ double FTCS2D::calculateArtificialViscosity(
 
     return artificial_viscosity;    
 }
+
+std::string FTCS2D::getName() const {
+    return "FTCS2D";
+}
