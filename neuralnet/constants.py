@@ -1,4 +1,7 @@
+import numpy as np
 from pathlib import Path
+
+SEED = 42
 
 # make path relative to constants.py
 FILE_DIR = Path(__file__).resolve().parent
@@ -43,6 +46,10 @@ CQ_MAX_MAGNITUDE = 10.0
 # how many extra features to have around the center
 # so like if 3 we will have our center and 3 more in each direction
 U_RADIUS = 3
+
+# Caps used for random sampling during feature matrix generation
+MAX_TIMESTEPS_PER_SOLUTION = 2000
+MAX_SPATIAL_POINTS_PER_TIMESTEP = 500
 
 EPOCHS = 10
 CPU_BATCH_SIZE = 2048
