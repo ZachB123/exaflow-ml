@@ -184,9 +184,9 @@ def get_feature_matrices_for_sample(sample_name, seed):
             batch_X = np.column_stack([
                 np.full(n_valid, coarse_dt),
                 np.full(n_valid, coarse_dx),
-                del_u_del_x,
-                del_u_del_x_squared,
-                u_curr_all[valid_indices, :],
+                u_curr_all[valid_indices, U_RADIUS][:, None], # velocity at current point only
+                u_curr_all[valid_indices, :U_RADIUS] - u_curr_all[valid_indices, :][:, [U_RADIUS]], # normalized stencil (subtract center point, middle term removed because always 0)
+                u_curr_all[valid_indices, (U_RADIUS + 1):] - u_curr_all[valid_indices, :][:, [U_RADIUS]],
                 np.full(n_valid, nu)
             ])
             batch_y = cq_valid

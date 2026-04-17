@@ -45,7 +45,7 @@ CQ_DENOMINATOR_EPSILON = 1e-8
 CQ_MAX_MAGNITUDE = 10.0
 # how many extra features to have around the center
 # so like if 3 we will have our center and 3 more in each direction
-U_RADIUS = 3
+U_RADIUS = 4
 
 # Caps used for random sampling during feature matrix generation
 MAX_TIMESTEPS_PER_SOLUTION = 2000

@@ -48,10 +48,19 @@ class ViscosityDataset(Dataset):
 
 class ArtificialViscosityNet(nn.Module):
     # 6 features for dx, dt, ux, uxx, u_curr and nu, then double the radius features
-    def __init__(self, input_dim=(6 + U_RADIUS * 2), hidden_dim=256):
+    def __init__(self, input_dim=(4 + U_RADIUS * 2), hidden_dim=128):
         super(ArtificialViscosityNet, self).__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.BatchNorm1d(hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
