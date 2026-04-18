@@ -19,6 +19,22 @@ void FTCS2D::calculateNextUandV(
     for (int i = 1; i < num_domain_points_x - 1; ++i) {
         for (int j = 1; j < num_domain_points_y - 1; ++j) {
 
+            int idx = i * num_domain_points_y + j;
+
+            // ======= U EQUATION =======
+
+            double flux_x_u = (u[i+1 * num_domain_points_y + j] * u[i+1 * num_domain_points_y + j] - u[i-1 * num_domain_points_y + j] * u[i-1 * num_domain_points_y + j]) / (4.0 * spatial_step_size_x);
+            double flux_y_u = (u[i * num_domain_points_y + j+1] * v[i * num_domain_points_y + j+1] - u[i * num_domain_points_y + j-1] * v[i * num_domain_points_y + j-1]) / (2.0 * spatial_step_size_y);
+
+            // ======= V EQUATION =======
+            
+            double flux_x_v = (u[i+1 * num_domain_points_y + j] * v[i+1 * num_domain_points_y + j] - u[i-1 * num_domain_points_y + j] * v[i-1 * num_domain_points_y + j]) / (2.0 * spatial_step_size_x);
+            double flux_y_v = (v[i * num_domain_points_y + j+1] * v[i * num_domain_points_y + j+1] - v[i * num_domain_points_y + j-1] * v[i * num_domain_points_y + j-1]) / (4.0 * spatial_step_size_y);
+
+        
+
+
+
             double du_dx = (u[(i + 1) * num_domain_points_y + j] - u[(i - 1) * num_domain_points_y + j]) / (2.0 * spatial_step_size_x);
             double du_dy = (u[i * num_domain_points_y + j + 1] - u[i * num_domain_points_y + j - 1]) / (2.0 * spatial_step_size_y);
 
