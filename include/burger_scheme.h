@@ -57,6 +57,16 @@ protected:
     double calculateArtificialViscosity(const std::vector<double>& u, double cq, double spatial_step_size, double time_step_size, int i, int num_domain_points, double kinematic_viscosity) const override;
 };
 
+class FTCSConservative : public BurgerScheme {
+public:
+    void calculateNextU(const std::vector<double>& u, std::vector<double>& u_next, double cq, int num_domain_points, double time_step_size, double spatial_step_size, double kinematic_viscosity) override;
+
+    std::string getName() const override;
+
+protected:
+    double calculateArtificialViscosity(const std::vector<double>& u, double cq, double spatial_step_size, int i, int num_domain_points) const override;
+};
+
 class LaxWendroff : public BurgerScheme {
 public:
     explicit LaxWendroff(bool use_nn = false) : BurgerScheme(use_nn) {}

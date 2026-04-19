@@ -117,6 +117,28 @@ int main() {
     random_function_solver.saveBinarySolution("../data", "random_function");
     MetadataWriter(random_function_solver, f).write("../data/random_function/metadata.json");
     std::cout << "random function was nan detected: " << random_function_solver.wasNanDetected() << std::endl;
+    
+    RandomInitialConditionConfig ftcs_random_function_config;
+    RandomInitialCondition g(ftcs_random_function_config, false, true);
+    
+    SolverConfig ftcs_solver_config = {
+        .kinematic_viscosity = 0.01,
+        .time_steps = 10000,
+        .domain_length = 10.0,
+        .spatial_step_size = 0.01,
+    };
+    
+    BurgersSolver1d ftcs(std::make_unique<FTCS>(), ftcs_solver_config, g);
+    BurgersSolver1d ftcs_conservative(std::make_unique<FTCSConservative>(), ftcs_solver_config, g);
+    
+    ftcs.solve();
+    ftcs.saveBinarySolution("../data", "ftcs");
+    MetadataWriter(ftcs, f).write("../data/ftcs/metadata.json");
+    
+    ftcs_conservative.solve();
+    ftcs_conservative.saveBinarySolution("../data", "ftcs_conservative");
+    MetadataWriter(ftcs_conservative, f).write("../data/ftcs_conservative/metadata.json");
+    
 
 
     // nn test
