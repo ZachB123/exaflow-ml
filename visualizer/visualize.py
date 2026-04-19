@@ -562,7 +562,9 @@ class MultiGridVisualizer:
         # Create figure
         # always reserve a thin bar at the top for global controls
         # reserve a little extra vertical space for the global bar
-        self.fig = plt.figure(figsize=(6*cols, 7*rows + 1.5))
+        # self.fig = plt.figure(figsize=(6*cols, 7*rows + 1.5))
+        self.fig = plt.figure(figsize=(5*cols, 6*rows + 1.5))
+
         
         # Create GridSpec with an extra row at top for the global bar
         # Each plot row still has a control row beneath it

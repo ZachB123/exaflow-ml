@@ -81,24 +81,33 @@ def cpu_train(X, y):
 
 def gpu_train(X, y):
     device = get_device()
-    assert device.type == "cuda", "gpu_train requires a CUDA device"
+    assert device.type == "cuda" or device.type == "mps", "gpu_train requires a gpu device"
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    del X
+    del y
 
     X_scaler = StandardScaler()
-    X_train_scaled = X_scaler.fit_transform(X_train)
-    X_test_scaled = X_scaler.transform(X_test)
+    X_train_scaled = X_scaler.fit_transform(X_train).astype(np.float32)
+    del X_train
+    X_test_scaled = X_scaler.transform(X_test).astype(np.float32)
+    del X_test
 
     y_scaler = StandardScaler()
-    y_train_scaled = y_scaler.fit_transform(y_train.reshape(-1, 1)).ravel()
-    y_test_scaled = y_scaler.transform(y_test.reshape(-1, 1)).ravel()
+    y_train_scaled = y_scaler.fit_transform(y_train.reshape(-1, 1)).ravel().astype(np.float32)
+    del y_train
+    y_test_scaled = y_scaler.transform(y_test.reshape(-1, 1)).ravel().astype(np.float32)
+    del y_test
 
     # Move full dataset to GPU once — eliminates all CPU→GPU transfers during training
-    X_train_t = torch.tensor(X_train_scaled, dtype=torch.float32).to(device)
-    y_train_t = torch.tensor(y_train_scaled, dtype=torch.float32).view(-1, 1).to(device)
-    X_test_t  = torch.tensor(X_test_scaled,  dtype=torch.float32).to(device)
-    y_test_t  = torch.tensor(y_test_scaled,  dtype=torch.float32).view(-1, 1).to(device)
+    X_train_t = torch.from_numpy(X_train_scaled).to(device)
+    y_train_t = torch.from_numpy(y_train_scaled).view(-1, 1).to(device)
+    X_test_t  = torch.from_numpy(X_test_scaled).to(device)
+    y_test_t  = torch.from_numpy(y_test_scaled).view(-1, 1).to(device)
     n_train, n_test = X_train_t.shape[0], X_test_t.shape[0]
+    del X_train_scaled
+    del X_test_scaled
+    del y_train_scaled
 
 
     model = ArtificialViscosityNet().to(device)
@@ -156,13 +165,36 @@ def gpu_train(X, y):
 if __name__ == "__main__":
     print(f"Loading feature matrices from {FEATURE_MATRICES_PATH}...")
     data = np.load(FEATURE_MATRICES_PATH)
-    X, y = data["X"], data["y"]
+    X, y = data["X"].astype(np.float32), data["y"].astype(np.float32)
     print(f"X shape: {X.shape} | y shape: {y.shape}")
 
-    train_function = gpu_train if torch.cuda.is_available() else cpu_train
+    train_function = gpu_train if torch.cuda.is_available() or torch.backends.mps.is_available() else cpu_train
     model, X_scaler, y_scaler = train_function(X, y)
 
-    torch.save(model.state_dict(), NEURAL_NET_DIR / "model.pt")
-    joblib.dump(X_scaler, NEURAL_NET_DIR / "X_scaler.pkl")
-    joblib.dump(y_scaler, NEURAL_NET_DIR / "y_scaler.pkl")
-    print(f"Saved model and scalers to {NEURAL_NET_DIR}")
+    OUTPUT_DIR.mkdir(exist_ok=True)
+
+    X_mean = torch.tensor(X_scaler.mean_,  dtype=torch.float32)
+    X_std  = torch.tensor(X_scaler.scale_, dtype=torch.float32)
+    y_mean = torch.tensor(y_scaler.mean_,  dtype=torch.float32)
+    y_std  = torch.tensor(y_scaler.scale_, dtype=torch.float32)
+
+    print(f"X_mean: {X_mean}")
+    print(f"X_std:  {X_std}")
+    print(f"y_mean: {y_mean}")
+    print(f"y_std:  {y_std}")
+
+    model = model.cpu()
+    model.eval()
+
+    for param in model.parameters():
+        param.requires_grad_(False)
+
+    def scaled_forward(x):
+        return model((x - X_mean) / X_std) * y_std + y_mean
+
+    example = torch.randn(1, 6 + U_RADIUS * 2)
+    with torch.no_grad():
+        scripted = torch.jit.trace(scaled_forward, example)
+
+    scripted.save(str(OUTPUT_DIR / "model.pt"))
+    print(f"Saved model to {OUTPUT_DIR}")
