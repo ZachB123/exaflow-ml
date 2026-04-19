@@ -27,7 +27,9 @@ const auto SCHEME_FACTORY = []() {
 const std::vector<int> REYNOLDS_NUMBERS = {1000};
 
 const int DEFAULT_TIME_STEPS = 10000;
-const double DEFAULT_SPATIAL_STEP_SIZE = 0.01;
+const double DX_MIN = 0.001;
+const double DX_MAX = 0.1;
+const double SPATIAL_STEP_OVERRIDE_SENTINEL = -1.0;
 
 // n (number of terms)
 const int N_MIN = 1;
@@ -201,7 +203,7 @@ int main(int argc, char* argv[]) {
     int num_samples = DEFAULT_NUM_SAMPLES;
     bool append_mode = false;
     int time_steps = DEFAULT_TIME_STEPS;
-    double spatial_step_size = DEFAULT_SPATIAL_STEP_SIZE;
+    double spatial_step_size = SPATIAL_STEP_OVERRIDE_SENTINEL;
     unsigned int seed = std::random_device{}();
 
     parseCommandLineArguments(argc, argv, num_samples, append_mode, time_steps, spatial_step_size, seed);
@@ -216,9 +218,15 @@ int main(int argc, char* argv[]) {
         std::cout << "Starting from sample 0\n";
     }
     
-    std::cout << "Generating " << num_samples << " samples with "
-              << time_steps << " time steps and spatial step size " << spatial_step_size
-              << " (dt computed per sample from stability conditions)\n";
+    if (spatial_step_size > 0.0) {
+        std::cout << "Generating " << num_samples << " samples with "
+                  << time_steps << " time steps and fixed spatial step size " << spatial_step_size
+                  << " (dt computed per sample from stability conditions)\n";
+    } else {
+        std::cout << "Generating " << num_samples << " samples with "
+                  << time_steps << " time steps and dx sampled log-uniformly per sample ["
+                  << DX_MIN << ", " << DX_MAX << "]\n";
+    }
 
     auto total_start = std::chrono::high_resolution_clock::now();
 
@@ -237,12 +245,21 @@ int main(int argc, char* argv[]) {
         int reynolds_number = REYNOLDS_NUMBERS[reynolds_index_distribution(reynolds_rng)];
         double kinematic_viscosity = (f.getMaxU() * cfg.domain_length) / reynolds_number;
 
+        double sample_dx;
+        if (spatial_step_size > 0.0) {
+            sample_dx = spatial_step_size;
+        } else {
+            std::mt19937 dx_rng(current_seed ^ 0xDEADBEEF);
+            std::uniform_real_distribution<double> log_dx_dist(std::log(DX_MIN), std::log(DX_MAX));
+            sample_dx = std::exp(log_dx_dist(dx_rng));
+        }
+
         SolverConfig solver_cfg;
         solver_cfg.kinematic_viscosity = kinematic_viscosity;
         solver_cfg.reynolds_number = reynolds_number;
         solver_cfg.time_steps = time_steps;
         solver_cfg.domain_length = cfg.domain_length;
-        solver_cfg.spatial_step_size = spatial_step_size;
+        solver_cfg.spatial_step_size = sample_dx;
 
         BurgersSolver1d solver(
             SCHEME_FACTORY(),
@@ -265,8 +282,8 @@ int main(int argc, char* argv[]) {
         auto sample_duration = std::chrono::duration_cast<std::chrono::milliseconds>(sample_end - sample_start);
 
         std::cout << "Generated sample " << sample_index << " in "
-                  << TRAINING_DIR << "/" << folder_name.str() 
-                  << " (took " << sample_duration.count() / 1000.0 << "s)\n";
+                  << TRAINING_DIR << "/" << folder_name.str()
+                  << " (dx=" << sample_dx << ", took " << sample_duration.count() / 1000.0 << "s)\n";
     }
 
     auto total_end = std::chrono::high_resolution_clock::now();

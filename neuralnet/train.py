@@ -192,7 +192,7 @@ if __name__ == "__main__":
     def scaled_forward(x):
         return model((x - X_mean) / X_std) * y_std + y_mean
 
-    example = torch.randn(1, 6 + U_RADIUS * 2)
+    example = torch.randn(1, X.shape[1])
     with torch.no_grad():
         scripted = torch.jit.trace(scaled_forward, example)
 
