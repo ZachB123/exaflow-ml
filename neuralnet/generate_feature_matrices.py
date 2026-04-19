@@ -1,5 +1,6 @@
 import numpy as np
 from multiprocessing import Pool, cpu_count
+import os
 
 from constants import *
 from burgers_solution import BurgersSolution
@@ -14,9 +15,7 @@ def requires_artificial_viscosity(dx, u_i_minus_1, u_i_plus_1):
     return ux < 0
 
 
-def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):
-    """Vectorized version: accepts scalars or numpy arrays. Returns cq or array of cqs (None for invalid)."""
-    
+def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):    
     # Compute ux for all points (vectorized)
     ux = (u_i_plus_1 - u_i_minus_1) / (2.0 * dx)
     
@@ -55,7 +54,7 @@ def reverse_engineer_cq(dt, dx, u_i, u_next_i, u_i_minus_1, u_i_plus_1, nu=0):
         
         # Apply magnitude threshold
         cq_result = cq_array.copy()
-        cq_result[np.abs(cq_array) >= CQ_MAX_MAGNITUDE] = np.nan
+        cq_result[(cq_array < 0) | (cq_array >= CQ_MAX_MAGNITUDE)] = np.nan
         
         return cq_result
     else:
@@ -180,6 +179,7 @@ def get_feature_matrices_for_sample(sample_name, seed):
             cq_valid = cq_array[valid_indices]
             
             # Build feature array
+            # order is dt, dx, dx, dxx, u's, nu
             n_valid = len(valid_indices)
             batch_X = np.column_stack([
                 np.full(n_valid, coarse_dt),
@@ -224,6 +224,7 @@ if __name__ == "__main__":
     print(f"X shape: {X.shape} | y shape: {y.shape}")
     print(f"y mean: {y.mean():.4f}, std: {y.std():.4f}, min: {y.min():.4f}, max: {y.max():.4f}")
 
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     np.savez(FEATURE_MATRICES_PATH, X=X, y=y)
     print(f"Saved to {FEATURE_MATRICES_PATH}")
     

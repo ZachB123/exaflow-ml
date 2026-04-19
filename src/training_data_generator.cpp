@@ -24,7 +24,7 @@ const auto SCHEME_FACTORY = []() {
 
 // Reynolds numbers to choose between per sample; kinematic viscosity is then
 // derived as (|maxU| * domain_length) / reynolds_number
-const std::vector<int> REYNOLDS_NUMBERS = {100, 1000};
+const std::vector<int> REYNOLDS_NUMBERS = {1000};
 
 const int DEFAULT_TIME_STEPS = 10000;
 const double DEFAULT_SPATIAL_STEP_SIZE = 0.01;

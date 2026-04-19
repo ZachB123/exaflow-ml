@@ -12,3 +12,6 @@ __pycache__/
 *.pt
 *.png
 CLAUDE.md
+output/
+lib/
+.git/
