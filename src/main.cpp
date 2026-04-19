@@ -100,7 +100,7 @@ int main() {
     MetadataWriter(solver).write("../data/sine_wave/metadata.json");
     std::cout << "sine wave was nan detected: " << solver.wasNanDetected() << std::endl;
 
-    RandomInitialConditionConfig functionConfig;
+    RandomInitialConditionConfig functionConfig; // default values
     RandomInitialCondition f(functionConfig, false, true);
     std::cout << f.toString() << std::endl;
 
@@ -117,4 +117,55 @@ int main() {
     random_function_solver.saveBinarySolution("../data", "random_function");
     MetadataWriter(random_function_solver, f).write("../data/random_function/metadata.json");
     std::cout << "random function was nan detected: " << random_function_solver.wasNanDetected() << std::endl;
+
+
+    // nn test
+    RandomInitialConditionConfig nnRandomFunctionConfig;
+    RandomInitialCondition g(nnRandomFunctionConfig, false, true);
+
+    SolverConfig fine_grain_config = {
+        .kinematic_viscosity = 0.8,
+        .time_steps = 100000,
+        .domain_length = 20.0,
+        .spatial_step_size = 0.005,
+    };
+
+    SolverConfig coarse_grain_config = {
+        .kinematic_viscosity = 0.8,
+        .time_steps = 100000,
+        .domain_length = 20.0,
+        .spatial_step_size = 0.01,
+    };
+
+    BurgersSolver1d godunov_fine_grain_solver(std::make_unique<Godunov>(), fine_grain_config, g);
+    BurgersSolver1d ftcs_fine_grain_solver(std::make_unique<FTCS>(), fine_grain_config, g);
+    BurgersSolver1d godunov_coarse_grain_solver(std::make_unique<Godunov>(), coarse_grain_config, g);
+    BurgersSolver1d ftcs_coarse_grain_solver(std::make_unique<FTCS>(), coarse_grain_config, g);
+    BurgersSolver1d ftcs_coarse_grain_nn_solver(std::make_unique<FTCS>(true), coarse_grain_config, g);
+
+    godunov_fine_grain_solver.solve();
+    godunov_fine_grain_solver.saveBinarySolution("../data", "godunov_fine_grain");
+    MetadataWriter(godunov_fine_grain_solver, g).write("../data/godunov_fine_grain/metadata.json");
+    std::cout << "godunov fine grain was nan detected: " << godunov_fine_grain_solver.wasNanDetected() << std::endl;
+
+    ftcs_fine_grain_solver.solve();
+    ftcs_fine_grain_solver.saveBinarySolution("../data", "ftcs_fine_grain");
+    MetadataWriter(ftcs_fine_grain_solver, g).write("../data/ftcs_fine_grain/metadata.json");
+    std::cout << "ftcs fine grain was nan detected: " << ftcs_fine_grain_solver.wasNanDetected() << std::endl;
+
+    godunov_coarse_grain_solver.solve();
+    godunov_coarse_grain_solver.saveBinarySolution("../data", "godunov_coarse_grain");
+    MetadataWriter(godunov_coarse_grain_solver, g).write("../data/godunov_coarse_grain/metadata.json");
+    std::cout << "godunov coarse grain was nan detected: " << godunov_coarse_grain_solver.wasNanDetected() << std::endl;
+
+    ftcs_coarse_grain_solver.solve();
+    ftcs_coarse_grain_solver.saveBinarySolution("../data", "ftcs_coarse_grain");
+    MetadataWriter(ftcs_coarse_grain_solver, g).write("../data/ftcs_coarse_grain/metadata.json");
+    std::cout << "ftcs coarse grain was nan detected: " << ftcs_coarse_grain_solver.wasNanDetected() << std::endl;
+
+    ftcs_coarse_grain_nn_solver.solve();
+    ftcs_coarse_grain_nn_solver.saveBinarySolution("../data", "ftcs_coarse_grain_nn");
+    MetadataWriter(ftcs_coarse_grain_nn_solver, g).write("../data/ftcs_coarse_grain_nn/metadata.json");
+    std::cout << "ftcs coarse grain nn was nan detected: " << ftcs_coarse_grain_nn_solver.wasNanDetected() << std::endl;
+
 }

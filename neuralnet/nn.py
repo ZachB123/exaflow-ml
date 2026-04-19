@@ -30,7 +30,9 @@ def plot_losses(train_losses, test_losses):
     plt.legend()
     plt.title("Training & Test Loss")
     plt.tight_layout()
-    plt.savefig("losses.png", dpi=150)
+
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    plt.savefig(OUTPUT_DIR / "losses.png", dpi=150)
     plt.show()
 
 
@@ -60,7 +62,8 @@ class ArtificialViscosityNet(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.BatchNorm1d(hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, 1)
+            nn.Linear(hidden_dim, 1),
+            nn.Softplus()
         )
 
     def forward(self, x):
