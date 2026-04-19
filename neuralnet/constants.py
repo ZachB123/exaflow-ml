@@ -41,7 +41,7 @@ BETA = 0.2
 
 # how much coarser our nn solve will be, for creating dt from the original solve dt
 # TODO make this a range so we don't rely on a single multiplier
-COARSENESS_MULTIPLIER = 2
+COARSENESS_MULTIPLIERS = list(range(1, 65))  # 1 to 64 inclusive
 CQ_DENOMINATOR_EPSILON = 1e-8
 CQ_MAX_MAGNITUDE = 5.0
 # how many extra features to have around the center
@@ -52,6 +52,6 @@ U_RADIUS = 4
 MAX_TIMESTEPS_PER_SOLUTION = 2000
 MAX_SPATIAL_POINTS_PER_TIMESTEP = 500
 
-EPOCHS = 250
+EPOCHS = 300
 CPU_BATCH_SIZE = 2048
 GPU_BATCH_SIZE = 65536

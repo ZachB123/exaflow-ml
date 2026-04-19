@@ -64,7 +64,7 @@ public:
     std::string getName() const override;
 
 protected:
-    double calculateArtificialViscosity(const std::vector<double>& u, double cq, double spatial_step_size, int i, int num_domain_points) const override;
+    double calculateArtificialViscosity(const std::vector<double>& u, double cq, double spatial_step_size, double time_step_size, int i, int num_domain_points, double kinematic_viscosity) const override;
 };
 
 class LaxWendroff : public BurgerScheme {

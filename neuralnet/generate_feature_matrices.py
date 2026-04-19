@@ -90,15 +90,16 @@ def get_feature_matrices_for_sample(sample_name, seed):
     y_rows = []
 
     burgers_solution = BurgersSolution(sample_name)
+    coarseness_multiplier = int(np.random.default_rng(seed).choice(COARSENESS_MULTIPLIERS))
     nu = burgers_solution.nu
     fine_dt = burgers_solution.time_step_size
     fine_dx = burgers_solution.spatial_step_size
-    coarse_dx = fine_dx * COARSENESS_MULTIPLIER
+    coarse_dx = fine_dx * coarseness_multiplier
     coarse_dt_advection = (ALPHA * coarse_dx) / burgers_solution.max_u
     coarse_dt_diffusion = (BETA * (coarse_dx**2)) / burgers_solution.nu
     coarse_dt = min(coarse_dt_advection, coarse_dt_diffusion)
 
-    print(f"Fine: dt={fine_dt:.6e}, dx={fine_dx:.6e} | Coarse: dt={coarse_dt:.6e}, dx={coarse_dx:.6e}")
+    print(f"Fine: dt={fine_dt:.6e}, dx={fine_dx:.6e} | Coarse: dt={coarse_dt:.6e}, dx={coarse_dx:.6e} | coarseness={coarseness_multiplier}")
 
     coarse_num_timesteps = int(burgers_solution.max_time // coarse_dt)
     coarse_num_domain_points = int(burgers_solution.domain_length // coarse_dx)
@@ -135,7 +136,7 @@ def get_feature_matrices_for_sample(sample_name, seed):
         
         # Optimization 1: Direct integer indexing (no np.interp)
         # Since coarse_dx = fine_dx * COARSENESS_MULTIPLIER, spatial_step indices directly map to fine grid
-        fine_indices = (sampled_spatial_steps[:, np.newaxis] + np.arange(-U_RADIUS, U_RADIUS + 1)) * COARSENESS_MULTIPLIER
+        fine_indices = (sampled_spatial_steps[:, np.newaxis] + np.arange(-U_RADIUS, U_RADIUS + 1)) * coarseness_multiplier
         fine_indices = fine_indices.astype(int)
         
         # Fetch u values from fine grid (no interpolation needed since indices are integer-aligned)
